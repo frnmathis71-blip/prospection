@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\WebsiteState;
+use App\Support\Domain;
 use Database\Factories\WebsiteFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,6 +25,16 @@ class Website extends Model
     protected $attributes = [
         'state' => 'unknown',
     ];
+
+    /**
+     * Le domaine est toujours déduit de l'adresse (null pour un réseau social ou un annuaire).
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Website $website) {
+            $website->domain = Domain::fromUrl($website->url);
+        });
+    }
 
     protected function casts(): array
     {

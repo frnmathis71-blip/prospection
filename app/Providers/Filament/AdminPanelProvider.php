@@ -12,8 +12,6 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -34,6 +32,9 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             // Page profil : gestion de la 2FA (codes de secours, désactivation, mot de passe).
             ->profile()
+            // Notifications en base : fin des imports CSV et autres tâches de fond.
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('15s')
             // Double authentification par application TOTP, avec codes de secours.
             // Obligatoire sauf si coupée en local (AUTH_TWO_FACTOR_REQUIRED=false) ;
             // toujours imposée en production. Activable à tout moment depuis le profil.
@@ -50,11 +51,8 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
             ])
+            // Tableau de bord : état de la file d'attente et suivi des imports (app/Filament/Widgets).
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
-            ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
-            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

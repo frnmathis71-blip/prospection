@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\DataSource;
 use App\Enums\ProspectStatus;
+use App\Support\Phone;
 use Database\Factories\CompanyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -53,6 +54,14 @@ class Company extends Model
     protected function siren(): Attribute
     {
         return Attribute::set(fn (?string $value) => $value === null ? null : preg_replace('/\s+/', '', $value));
+    }
+
+    /**
+     * Le téléphone est stocké dans un format unique (« 0380123456 ») pour pouvoir être comparé.
+     */
+    protected function phone(): Attribute
+    {
+        return Attribute::set(fn (?string $value) => Phone::normalize($value));
     }
 
     /** @return HasOne<Website, $this> */

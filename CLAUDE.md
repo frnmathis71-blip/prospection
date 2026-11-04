@@ -45,6 +45,11 @@ cahier des charges, section « Interdits — à ne jamais faire », et s'appliqu
   commentaire dans chaque migration. Statuts et types = enums PHP dans `app/Enums` (libellés français).
 - Emails et domaines toujours stockés en minuscules ; `SuppressionEntry::blocks($email)` vérifie
   l'adresse ET son domaine. La table `suppression_list` n'est jamais purgée ni modifiable depuis l'interface.
+- Import CSV (M3) : `App\Filament\Imports\CompanyImporter`, lancé depuis la liste Entreprises, traité en
+  file d'attente (un worker doit tourner). Dédoublonnage : SIREN, puis domaine propre (site ou email pro,
+  jamais un réseau social ni une messagerie grand public, cf. `App\Support\Domain`) ou téléphone normalisé
+  (`App\Support\Phone`). Un import complète les champs vides, il n'écrase jamais une donnée existante.
+- Messages de validation en français : `lang/fr/validation.php`.
 - Données de démo (`DemoSeeder`) : entreprises fictives, adresses en `.example` uniquement (domaine
   réservé, aucun email ne peut y arriver), jamais chargées en production.
 - Horizon exige les extensions `pcntl`/`posix`, absentes sous Windows : en local Windows, installer avec

@@ -21,6 +21,11 @@ php artisan make:filament-user
 - Tableau de bord des files : http://codenyr-prospection.test/horizon (connecté avec 2FA).
 - Contrôle de la file : `php artisan app:queue-check`.
 - Données de démonstration fictives (hors production) : `php artisan db:seed`.
+- Import CSV : bouton « Importer un CSV » dans Entreprises. Le fichier est traité par la file d'attente :
+  `php artisan queue:work` doit tourner. Une notification (cloche) annonce la fin et donne le rapport des
+  lignes en erreur. Un modèle de fichier est téléchargeable dans la fenêtre d'import.
+- Tableau de bord : état de la file (tâches en attente, worker arrêté, échecs) et suivi des imports
+  (en attente, en cours avec progression, terminé, rapport d'erreurs), mis à jour toutes les 5 secondes.
 
 ## Qualité
 
