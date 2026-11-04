@@ -15,7 +15,7 @@ class SearchFactory extends Factory
         return [
             'name' => 'Plombiers 71',
             'criteria' => ['departments' => ['71'], 'naf_codes' => ['43.22A'], 'active_only' => true],
-            'recurrence' => 'weekly',
+            'recurrence' => null, // jamais de relance automatique pour une recherche de démo
             'last_run_at' => null,
         ];
     }

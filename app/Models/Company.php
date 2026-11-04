@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 #[Fillable([
     'siren', 'name', 'naf_code', 'address', 'postal_code', 'city', 'department',
     'latitude', 'longitude', 'phone', 'headcount_range', 'founded_on', 'is_active',
-    'status', 'score', 'next_action_on', 'quote_amount', 'source', 'search_id',
+    'status', 'score', 'next_action_on', 'quote_amount', 'source', 'search_id', 'osm_signals', 'enriched_at',
 ])]
 class Company extends Model
 {
@@ -45,6 +45,8 @@ class Company extends Model
             'quote_amount' => 'decimal:2',
             'latitude' => 'decimal:6',
             'longitude' => 'decimal:6',
+            'osm_signals' => 'array',
+            'enriched_at' => 'datetime',
         ];
     }
 

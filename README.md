@@ -17,13 +17,19 @@ php artisan make:filament-user
 ```
 
 - Interface : http://codenyr-prospection.test/admin (Herd) — première connexion : configuration de la 2FA.
-- File d'attente sous Windows : `php artisan queue:work` (Horizon nécessite Linux : `php artisan horizon` sur le VPS).
+- File d'attente sous Windows, **depuis le dossier du projet** : `php artisan queue:work --queue=default,enrichment`
+  (imports et recherches d'abord, enrichissements ensuite ; Horizon nécessite Linux : `php artisan horizon` sur le VPS).
+  Après une modification du code, relancer le worker (ou `php artisan queue:restart`).
 - Tableau de bord des files : http://codenyr-prospection.test/horizon (connecté avec 2FA).
 - Contrôle de la file : `php artisan app:queue-check`.
 - Données de démonstration fictives (hors production) : `php artisan db:seed`.
 - Import CSV : bouton « Importer un CSV » dans Entreprises. Le fichier est traité par la file d'attente :
-  `php artisan queue:work` doit tourner. Une notification (cloche) annonce la fin et donne le rapport des
+  le worker doit tourner. Une notification (cloche) annonce la fin et donne le rapport des
   lignes en erreur. Un modèle de fichier est téléchargeable dans la fenêtre d'import.
+- Recherches d'entreprises : menu « Recherches » → créer (zone, secteur, effectif, ancienneté) → « Lancer ».
+  Les entreprises sont ajoutées puis complétées (OpenStreetMap, devinette de domaine) par la file
+  d'attente. Relance automatique possible chaque lundi ou chaque mois : le planificateur doit tourner
+  (`php artisan schedule:work` en local, cron `schedule:run` en production).
 - Tableau de bord : état de la file (tâches en attente, worker arrêté, échecs) et suivi des imports
   (en attente, en cours avec progression, terminé, rapport d'erreurs), mis à jour toutes les 5 secondes.
 

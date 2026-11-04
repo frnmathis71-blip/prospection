@@ -3,12 +3,9 @@
 namespace App\Filament\Imports;
 
 use App\Enums\ActivityType;
-use App\Enums\ContactType;
-use App\Enums\ContactVerification;
 use App\Enums\DataSource;
-use App\Enums\ProspectStatus;
 use App\Models\Company;
-use App\Models\Contact;
+use App\Services\ContactRecorder;
 use App\Support\Domain;
 use App\Support\Phone;
 use Carbon\Carbon;
@@ -17,7 +14,6 @@ use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Number;
-use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -31,16 +27,6 @@ use Throwable;
 class CompanyImporter extends Importer
 {
     protected static ?string $model = Company::class;
-
-    /** Préfixes d'adresses génériques (contact@, info@…). */
-    private const GENERIC_PREFIXES = [
-        'contact', 'info', 'infos', 'accueil', 'bonjour', 'hello', 'commercial', 'devis', 'secretariat',
-        'administration', 'admin', 'direction', 'reservation', 'reservations', 'agence', 'cabinet', 'office',
-        'service', 'sav', 'boutique', 'magasin', 'atelier', 'restaurant', 'mairie',
-    ];
-
-    /** Statuts déjà bloquants : l'import ne les modifie pas. */
-    private const BLOCKING_STATUSES = [ProspectStatus::Unsubscribed, ProspectStatus::Bounced, ProspectStatus::DoNotContact];
 
     public static function getColumns(): array
     {
@@ -217,20 +203,7 @@ class CompanyImporter extends Importer
             return;
         }
 
-        /** @var Contact $contact */
-        $contact = $this->record->contacts()->firstOrCreate(
-            ['email' => $email],
-            [
-                'type' => self::contactType($email),
-                'source' => DataSource::CsvImport,
-                'collected_at' => now(),
-                'verification' => ContactVerification::Pending,
-            ],
-        );
-
-        if ($contact->isSuppressed() && ! in_array($this->record->status, self::BLOCKING_STATUSES, true)) {
-            $this->record->update(['status' => ProspectStatus::DoNotContact]);
-        }
+        ContactRecorder::record($this->record, $email, DataSource::CsvImport);
     }
 
     /**
@@ -280,18 +253,6 @@ class CompanyImporter extends Importer
             }
 
             $record->setAttribute($attribute, $state);
-        };
-    }
-
-    public static function contactType(string $email): ContactType
-    {
-        $local = Str::before($email, '@');
-        $domain = Str::afterLast($email, '@');
-
-        return match (true) {
-            Domain::isPersonalMailbox($domain) => ContactType::Personal,
-            in_array(preg_replace('/[^a-z]/', '', $local), self::GENERIC_PREFIXES, true) => ContactType::Generic,
-            default => ContactType::Nominative,
         };
     }
 

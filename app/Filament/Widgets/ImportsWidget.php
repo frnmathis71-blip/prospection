@@ -9,6 +9,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\URL;
 
 /**
@@ -17,6 +18,9 @@ use Illuminate\Support\Facades\URL;
 class ImportsWidget extends TableWidget
 {
     protected static ?int $sort = 2;
+
+    // Affiché dès l'ouverture du tableau de bord (pas de chargement différé).
+    protected static bool $isLazy = false;
 
     protected int|string|array $columnSpan = 'full';
 
@@ -36,6 +40,7 @@ class ImportsWidget extends TableWidget
             ->columns([
                 TextColumn::make('file_name')
                     ->label('Fichier')
+                    ->wrap()
                     ->description(fn (Import $record) => 'Lancé le '.$record->created_at->format('d/m/Y à H:i')),
                 TextColumn::make('status')
                     ->label('État')
@@ -46,27 +51,28 @@ class ImportsWidget extends TableWidget
                         'Terminé avec erreurs' => 'warning',
                         'En cours' => 'info',
                         default => 'gray',
-                    }),
+                    })
+                    ->description(fn (Import $record) => self::completedAt($record)),
                 TextColumn::make('progress')
                     ->label('Progression')
                     ->state(fn (Import $record) => self::progress($record))
                     ->description(fn (Import $record) => $record->processed_rows.' / '.$record->total_rows.' lignes traitées'),
+                // Importées et en erreur dans une même colonne, pour tenir dans la largeur.
                 TextColumn::make('successful_rows')
-                    ->label('Importées')
-                    ->alignCenter(),
+                    ->label('Résultat')
+                    ->formatStateUsing(fn (int $state) => $state.' '.($state > 1 ? 'importées' : 'importée'))
+                    ->description(fn (Import $record) => $record->failed_rows_count > 0
+                        ? $record->failed_rows_count.' en erreur'
+                        : 'aucune erreur'),
                 TextColumn::make('failed_rows_count')
                     ->label('En erreur')
-                    ->alignCenter()
-                    ->color(fn (int $state) => $state > 0 ? 'danger' : null),
-                TextColumn::make('completed_at')
-                    ->label('Terminé le')
-                    ->dateTime('d/m/Y H:i')
-                    ->placeholder('—'),
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordActions([
                 Action::make('failedRows')
                     ->label('Rapport')
-                    ->tooltip('Télécharger les lignes en erreur')
+                    ->iconButton()
+                    ->tooltip('Télécharger le rapport des lignes en erreur')
                     ->icon(Heroicon::OutlinedArrowDownTray)
                     ->color('danger')
                     ->visible(fn (Import $record) => $record->failed_rows_count > 0)
@@ -75,6 +81,22 @@ class ImportsWidget extends TableWidget
                         'import' => $record,
                     ]), shouldOpenInNewTab: true),
             ]);
+    }
+
+    /**
+     * « Le 04/11/2026 à 20:53 » (Filament stocke completed_at en timestamp Unix).
+     */
+    public static function completedAt(Import $import): ?string
+    {
+        $value = $import->completed_at;
+
+        if ($value === null) {
+            return null;
+        }
+
+        $date = is_numeric($value) ? Carbon::createFromTimestamp($value, config('app.timezone')) : Carbon::parse($value);
+
+        return 'Le '.$date->format('d/m/Y à H:i');
     }
 
     public static function status(Import $import): string

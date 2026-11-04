@@ -50,8 +50,20 @@ cahier des charges, section « Interdits — à ne jamais faire », et s'appliqu
   jamais un réseau social ni une messagerie grand public, cf. `App\Support\Domain`) ou téléphone normalisé
   (`App\Support\Phone`). Un import complète les champs vides, il n'écrase jamais une donnée existante.
 - Messages de validation en français : `lang/fr/validation.php`.
+- Recherche d'entreprises (M4) : `App\Jobs\RunCompanySearch` (API Recherche d'entreprises, paginée, puis
+  BODACC pour exclure les procédures collectives, que l'API ne fournit pas), puis `App\Jobs\EnrichCompany`
+  (OpenStreetMap/Overpass puis devinette de domaine, débit limité par le RateLimiter « enrichment »).
+  Toute API externe passe par `App\Services\ExternalHttp` (User-Agent, nouvelles tentatives sur 429/5xx) ;
+  une indisponibilité lève `ApiUnavailableException` et le job est remis en file (jamais d'échec brutal).
+  Tout site visité passe d'abord par `App\Services\RobotsTxt`. DNS isolé dans `App\Services\DnsResolver`
+  (à simuler dans les tests). Réglages et presets NAF : `config/prospection.php`.
+- Données OpenStreetMap : mentionner « © contributeurs OpenStreetMap » là où elles sont affichées.
 - Données de démo (`DemoSeeder`) : entreprises fictives, adresses en `.example` uniquement (domaine
   réservé, aucun email ne peut y arriver), jamais chargées en production.
 - Horizon exige les extensions `pcntl`/`posix`, absentes sous Windows : en local Windows, installer avec
   `composer install --ignore-platform-req=ext-pcntl --ignore-platform-req=ext-posix` et traiter la file
-  avec `php artisan queue:work`. Horizon tourne sur le VPS Linux.
+  avec `php artisan queue:work --queue=default,enrichment`. Horizon tourne sur le VPS Linux.
+- Deux files : `default` (imports, recherches) passe avant `enrichment` (EnrichCompany, débit limité).
+  `retry_after` des files (960 s) doit rester supérieur au plus long job (RunCompanySearch : 900 s).
+- Overpass saturé : pause commune à tous les jobs (`App\Services\OverpassPause`, 1 min → 1 h), jamais de
+  nouvelle tentative immédiate. Signal de vie du worker : `App\Support\WorkerHeartbeat` (tableau de bord).

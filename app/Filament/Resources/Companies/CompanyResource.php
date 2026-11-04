@@ -134,6 +134,12 @@ class CompanyResource extends Resource
                             ->placeholder('Aucun site'),
                         TextEntry::make('website.pagespeed')->label('PageSpeed mobile')->placeholder('—'),
                         TextEntry::make('website.problems')->label('Problèmes détectés')->listWithLineBreaks()->bulleted()->placeholder('Aucun')->columnSpanFull(),
+                        TextEntry::make('osm_signals')
+                            ->label('Signaux OpenStreetMap')
+                            ->state(fn (Company $record) => self::osmSummary($record))
+                            ->helperText('Données © contributeurs OpenStreetMap (licence ODbL).')
+                            ->visible(fn (Company $record) => filled($record->osm_signals))
+                            ->columnSpanFull(),
                     ]),
                 Section::make('Contacts')
                     ->schema([
@@ -238,6 +244,8 @@ class CompanyResource extends Resource
                     ))
                     ->indicateUsing(fn (array $data) => filled($data['min'] ?? null) ? "Score ≥ {$data['min']}" : null),
                 TernaryFilter::make('is_active')->label('Entreprise active'),
+                SelectFilter::make('search_id')->label('Recherche d’origine')->relationship('search', 'name'),
+                SelectFilter::make('source')->label('Origine de la donnée')->options(DataSource::class)->multiple(),
             ])
             // Actions en icônes (avec infobulle) pour que le tableau tienne dans la largeur.
             ->recordActions([
@@ -258,6 +266,27 @@ class CompanyResource extends Resource
         $short = preg_replace('#^https?://(www\.)?#', '', rtrim($url, '/'));
 
         return mb_strlen($short) > 26 ? mb_substr($short, 0, 25).'…' : $short;
+    }
+
+    /**
+     * « Fiche OSM « Plomberie Martin » : horaires, téléphone, réseaux sociaux renseignés ».
+     */
+    public static function osmSummary(Company $company): ?string
+    {
+        $signals = $company->osm_signals ?? [];
+
+        if ($signals === []) {
+            return null;
+        }
+
+        $present = array_keys(array_filter([
+            'horaires' => $signals['opening_hours'] ?? false,
+            'téléphone' => $signals['phone'] ?? false,
+            'réseaux sociaux' => $signals['social'] ?? false,
+        ]));
+
+        return 'Lieu « '.($signals['osm_name'] ?? $company->name).' » : '
+            .($present ? implode(', ', $present).' renseignés (entreprise active et joignable)' : 'aucune information de contact');
     }
 
     /**

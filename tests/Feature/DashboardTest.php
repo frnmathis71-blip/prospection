@@ -5,8 +5,10 @@ use App\Filament\Widgets\ImportsWidget;
 use App\Filament\Widgets\QueueStatusWidget;
 use App\Jobs\QueueHealthCheck;
 use App\Models\User;
+use App\Support\WorkerHeartbeat;
 use Filament\Actions\Imports\Models\Import;
 use Filament\Pages\Dashboard;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
@@ -52,6 +54,8 @@ it('montre l’état et la progression de chaque import', function () {
         ->assertTableColumnStateSet('status', 'En cours', $running)
         ->assertTableColumnStateSet('progress', '40 %', $running)
         ->assertTableColumnStateSet('status', 'Terminé', $done)
+        ->assertSee('Le '.now()->format('d/m/Y').' à') // date de fin affichée (timestamp Filament)
+        ->assertSee('2 en erreur')
         ->assertTableColumnStateSet('status', 'Terminé avec erreurs', $withErrors)
         ->assertTableColumnStateSet('failed_rows_count', 2, $withErrors)
         ->assertTableActionVisible('failedRows', $withErrors)
@@ -74,20 +78,50 @@ it('donne un lien de rapport d’erreurs qui fonctionne', function () {
     expect($response->streamedContent())->toContain('Le champ nom est obligatoire.');
 });
 
-it('indique que tout va bien quand la file est vide', function () {
+it('indique que tout va bien quand la file est vide et le worker actif', function () {
+    WorkerHeartbeat::beat();
+
     Livewire::test(QueueStatusWidget::class)
         ->assertSee('Rien à traiter')
+        ->assertSee('Actif')
         ->assertSee('Aucun échec')
-        ->assertDontSee('Arrêté ?');
+        ->assertDontSee('Arrêté');
 });
 
-it('signale un worker arrêté quand une tâche attend depuis plus d’une minute', function () {
+it('signale un worker arrêté quand une tâche attend sans signal de vie', function () {
     QueueHealthCheck::dispatch('jeton');
     $this->travel(5)->minutes();
 
     Livewire::test(QueueStatusWidget::class)
-        ->assertSee('Arrêté ?')
+        ->assertSee('Arrêté')
         ->assertSee('php artisan queue:work');
+});
+
+it('ne signale pas d’arrêt quand le worker est actif mais que des tâches attendent leur tour', function () {
+    QueueHealthCheck::dispatch('jeton');
+    $this->travel(5)->minutes();
+    WorkerHeartbeat::beat(); // le worker tourne (débit limité, job long…)
+
+    Livewire::test(QueueStatusWidget::class)
+        ->assertSee('Actif')
+        ->assertSee('Traitement en cours')
+        ->assertDontSee('Arrêté');
+});
+
+it('considère le worker arrêté sans signal depuis plus de 90 secondes', function () {
+    WorkerHeartbeat::beat();
+    $this->travel(2)->minutes();
+
+    expect(WorkerHeartbeat::isAlive())->toBeFalse();
+});
+
+it('fait battre le signal de vie à chaque tour du worker', function () {
+    Cache::forget(WorkerHeartbeat::CACHE_KEY);
+    QueueHealthCheck::dispatch('jeton');
+
+    $this->artisan('queue:work', ['connection' => 'database', '--once' => true])->assertSuccessful();
+
+    expect(WorkerHeartbeat::isAlive())->toBeTrue();
 });
 
 it('compte les tâches échouées', function () {

@@ -99,6 +99,7 @@ return [
 
     'waits' => [
         'redis:default' => 60,
+        'redis:enrichment' => 3600, // file volontairement lente (débit limité)
     ],
 
     /*
@@ -200,15 +201,16 @@ return [
     'defaults' => [
         'supervisor-1' => [
             'connection' => 'redis',
-            'queue' => ['default'],
-            'balance' => 'auto',
+            // « default » (imports, recherches) passe avant « enrichment » (lots d'enrichissements).
+            'queue' => ['default', 'enrichment'],
+            'balance' => false,
             'autoScalingStrategy' => 'time',
             'maxProcesses' => 1,
             'maxTime' => 0,
             'maxJobs' => 0,
             'memory' => 128,
             'tries' => 1,
-            'timeout' => 60,
+            'timeout' => 900, // une recherche peut durer plusieurs minutes (< retry_after de la file)
             'nice' => 0,
         ],
     ],
