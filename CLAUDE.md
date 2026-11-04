@@ -40,6 +40,13 @@ cahier des charges, section « Interdits — à ne jamais faire », et s'appliqu
 - Horizon : middleware `auth` (redirection vers la connexion) + gate `viewHorizon` (2FA activée requise
   quand elle est obligatoire), y compris en local.
 - Tests : SQLite en mémoire, `Http::preventStrayRequests()` actif dans tous les tests Feature.
+  `tests/Database` contient les tests qui gèrent eux-mêmes la base (`migrate:fresh`), sans transaction.
+- Modèle de données (M2) : noms de colonnes en anglais, correspondance avec le cahier des charges en
+  commentaire dans chaque migration. Statuts et types = enums PHP dans `app/Enums` (libellés français).
+- Emails et domaines toujours stockés en minuscules ; `SuppressionEntry::blocks($email)` vérifie
+  l'adresse ET son domaine. La table `suppression_list` n'est jamais purgée ni modifiable depuis l'interface.
+- Données de démo (`DemoSeeder`) : entreprises fictives, adresses en `.example` uniquement (domaine
+  réservé, aucun email ne peut y arriver), jamais chargées en production.
 - Horizon exige les extensions `pcntl`/`posix`, absentes sous Windows : en local Windows, installer avec
   `composer install --ignore-platform-req=ext-pcntl --ignore-platform-req=ext-posix` et traiter la file
   avec `php artisan queue:work`. Horizon tourne sur le VPS Linux.

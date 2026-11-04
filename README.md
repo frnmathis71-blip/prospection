@@ -20,6 +20,7 @@ php artisan make:filament-user
 - File d'attente sous Windows : `php artisan queue:work` (Horizon nécessite Linux : `php artisan horizon` sur le VPS).
 - Tableau de bord des files : http://codenyr-prospection.test/horizon (connecté avec 2FA).
 - Contrôle de la file : `php artisan app:queue-check`.
+- Données de démonstration fictives (hors production) : `php artisan db:seed`.
 
 ## Qualité
 

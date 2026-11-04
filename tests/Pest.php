@@ -18,3 +18,8 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->beforeEach(fn () => Http::preventStrayRequests())
     ->in('Feature');
+
+// Tests de schéma qui gèrent eux-mêmes la base (migrate:fresh), sans transaction.
+pest()->extend(TestCase::class)
+    ->beforeEach(fn () => Http::preventStrayRequests())
+    ->in('Database');
