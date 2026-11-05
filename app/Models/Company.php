@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ContactVerification;
 use App\Enums\DataSource;
 use App\Enums\ProspectStatus;
 use App\Support\Phone;
@@ -23,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 #[Fillable([
     'siren', 'name', 'naf_code', 'address', 'postal_code', 'city', 'department',
     'latitude', 'longitude', 'phone', 'headcount_range', 'founded_on', 'is_active',
-    'status', 'score', 'next_action_on', 'quote_amount', 'source', 'search_id', 'osm_signals', 'enriched_at',
+    'status', 'score', 'next_action_on', 'quote_amount', 'source', 'search_id', 'osm_signals', 'enriched_at', 'emails_searched_at',
 ])]
 class Company extends Model
 {
@@ -51,6 +52,7 @@ class Company extends Model
             'score_details' => 'array',
             'scored_at' => 'datetime',
             'enriched_at' => 'datetime',
+            'emails_searched_at' => 'datetime',
         ];
     }
 
@@ -81,6 +83,20 @@ class Company extends Model
         $query->where('is_active', true)
             ->whereIn('status', ProspectStatus::TO_PROCESS)
             ->whereNotIn('status', ProspectStatus::BLOCKING);
+    }
+
+    /**
+     * Liste d'appels (M7) : prospects à traiter, avec un téléphone mais sans email utilisable
+     * (aucune adresse, ou seulement des adresses invalides).
+     *
+     * @param  Builder<Company>  $query
+     */
+    #[Scope]
+    protected function toCall(Builder $query): void
+    {
+        $query->toProcess()
+            ->whereNotNull('phone')
+            ->whereDoesntHave('contacts', fn (Builder $query) => $query->where('verification', '!=', ContactVerification::Invalid));
     }
 
     /** @return HasOne<Website, $this> */

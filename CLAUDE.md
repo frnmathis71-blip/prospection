@@ -69,6 +69,17 @@ cahier des charges, section « Interdits — à ne jamais faire », et s'appliqu
   (table `settings`, clé `scoring_weights`) ; changement de poids → `RecalculateScores`. Recalcul après chaque
   analyse, contact enregistré, création (recherche, import, formulaire) et modification de fiche. Le score
   n'est jamais saisi à la main. Liste « À traiter » : scope `Company::toProcess()` (jamais de statut bloquant).
+- Emails (M7) : `App\Jobs\FindContactEmails` (file `enrichment`, RateLimiter « email_search »), lancé après une
+  analyse qui trouve un site en ligne (`EmailFinder::CRAWLABLE_STATES`), depuis Filament ou par
+  `php artisan app:find-emails`. `App\Services\EmailFinder` : accueil + page contact + mentions légales (liens de
+  l'accueil, même site), robots.txt par page, `Sleep` entre deux pages ; dans les mentions légales, seules les
+  adresses du domaine du site ou d'une messagerie personnelle sont gardées (pas l'agence web ni l'hébergeur).
+  `App\Services\EmailExtractor` : mailto:, texte, formes masquées, protection Cloudflare. Aucune adresse devinée.
+  Toute nouvelle adresse (quelle que soit sa source) est vérifiée par `App\Jobs\VerifyContact` (événement `created`
+  du modèle Contact) : syntaxe, adresse jetable, MX via `DnsResolver`. Adresse personnelle (gmail.com…) =
+  `Contact::needsReview()` tant qu'elle n'est pas validée à la main (onglet « À revoir ») : à exclure des envois (M9).
+  Liste d'appels : page `CallList`, scope `Company::toCall()` (à traiter + téléphone + aucun email non invalide).
+  Tests : le DNS est simulé partout (`Tests\Fakes\FakeDnsResolver`, branché dans `tests/Pest.php`).
 - Données OpenStreetMap : mentionner « © contributeurs OpenStreetMap » là où elles sont affichées.
 - Données de démo (`DemoSeeder`) : entreprises fictives, adresses en `.example` uniquement (domaine
   réservé, aucun email ne peut y arriver), jamais chargées en production.

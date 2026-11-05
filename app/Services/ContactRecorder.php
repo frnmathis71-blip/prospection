@@ -28,7 +28,7 @@ class ContactRecorder
     /** Statuts déjà bloquants : jamais modifiés ici. */
     private const BLOCKING_STATUSES = [ProspectStatus::Unsubscribed, ProspectStatus::Bounced, ProspectStatus::DoNotContact];
 
-    public static function record(Company $company, string $email, DataSource $source): Contact
+    public static function record(Company $company, string $email, DataSource $source, ?string $sourceUrl = null): Contact
     {
         $email = mb_strtolower(trim($email));
 
@@ -38,6 +38,7 @@ class ContactRecorder
             [
                 'type' => self::type($email),
                 'source' => $source,
+                'source_url' => $sourceUrl,
                 'collected_at' => now(),
                 'verification' => ContactVerification::Pending,
             ],

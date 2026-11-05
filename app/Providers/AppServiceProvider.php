@@ -29,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
         // Analyse des sites (M5) : une visite par site, débit raisonnable.
         RateLimiter::for('analysis', fn () => Limit::perMinute((int) config('prospection.website_analysis.per_minute', 20)));
 
+        // Recherche d'emails (M7) : quelques pages par site, débit raisonnable.
+        RateLimiter::for('email_search', fn () => Limit::perMinute((int) config('prospection.email_search.per_minute', 10)));
+
         // Signal de vie du worker pour le tableau de bord (à chaque tour de boucle et à chaque job).
         Queue::looping(fn () => WorkerHeartbeat::beat());
         Queue::before(fn () => WorkerHeartbeat::beat());

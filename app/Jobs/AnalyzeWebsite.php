@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Company;
 use App\Services\CompanyScorer;
+use App\Services\EmailFinder;
 use App\Services\WebsiteAnalyzer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -51,6 +52,11 @@ class AnalyzeWebsite implements ShouldQueue
         $website = $company->website ?? $company->website()->make();
 
         $analyzer->analyze($website);
+
+        // M7 : un site en ligne est ensuite exploré pour trouver ses emails publiés.
+        if (in_array($website->state, EmailFinder::CRAWLABLE_STATES, true)) {
+            FindContactEmails::dispatch($company);
+        }
 
         // M6 : le score dépend surtout du site, il est recalculé après chaque analyse.
         $scorer->refresh($company->fresh());

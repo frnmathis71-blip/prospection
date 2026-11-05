@@ -10,7 +10,10 @@ use App\Filament\Resources\Companies\Pages\EditCompany;
 use App\Filament\Resources\Companies\Pages\ListCompanies;
 use App\Filament\Resources\Companies\Pages\ViewCompany;
 use App\Jobs\AnalyzeWebsite;
+use App\Jobs\FindContactEmails;
 use App\Models\Company;
+use App\Models\Contact;
+use App\Services\EmailFinder;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -206,15 +209,29 @@ class CompanyResource extends Resource
                             ->columnSpanFull(),
                     ]),
                 Section::make('Contacts')
+                    ->description(fn (Company $record) => $record->emails_searched_at
+                        ? 'Site exploré le '.$record->emails_searched_at->timezone(config('app.timezone'))->format('d/m/Y à H:i')
+                        : null)
                     ->schema([
                         RepeatableEntry::make('contacts')
                             ->hiddenLabel()
-                            ->columns(4)
+                            ->columns(5)
                             ->placeholder('Aucun email trouvé')
                             ->schema([
                                 TextEntry::make('email')->label('Email')->copyable(),
-                                TextEntry::make('type')->label('Type')->badge(),
-                                TextEntry::make('source')->label('Source')->badge(),
+                                TextEntry::make('type')
+                                    ->label('Type')
+                                    ->badge()
+                                    ->helperText(fn (Contact $record) => $record->needsReview() ? 'Adresse personnelle : à revoir (menu Contacts)' : null),
+                                TextEntry::make('verification')
+                                    ->label('Vérification')
+                                    ->badge()
+                                    ->helperText(fn (Contact $record) => $record->verification_note),
+                                TextEntry::make('source')
+                                    ->label('Source')
+                                    ->badge()
+                                    ->url(fn (Contact $record) => $record->source_url, shouldOpenInNewTab: true)
+                                    ->helperText(fn (Contact $record) => $record->source_url ? CompanyResource::shortUrl($record->source_url) : null),
                                 TextEntry::make('collected_at')->label('Collecté le')->date('d/m/Y'),
                             ]),
                     ]),
@@ -339,7 +356,41 @@ class CompanyResource extends Resource
                             ->success()
                             ->send();
                     }),
+                BulkAction::make('findEmails')
+                    ->label('Chercher les emails')
+                    ->icon(Heroicon::OutlinedAtSymbol)
+                    ->deselectRecordsAfterCompletion()
+                    ->action(function (Collection $records) {
+                        $records->each(fn (Company $company) => FindContactEmails::dispatch($company));
+
+                        Notification::make()
+                            ->title($records->count().' recherche(s) d’emails mise(s) en file')
+                            ->body('Seuls les sites en ligne sont explorés (worker requis).')
+                            ->success()
+                            ->send();
+                    }),
             ]);
+    }
+
+    /**
+     * Recherche des emails publiés sur le site, en tâche de fond (fiche entreprise, M7).
+     */
+    public static function findEmailsAction(): Action
+    {
+        return Action::make('findEmails')
+            ->label('Chercher les emails')
+            ->icon(Heroicon::OutlinedAtSymbol)
+            ->color('gray')
+            ->visible(fn (Company $record) => in_array($record->website?->state, EmailFinder::CRAWLABLE_STATES, true))
+            ->action(function (Company $record) {
+                FindContactEmails::dispatch($record);
+
+                Notification::make()
+                    ->title('Recherche d’emails mise en file')
+                    ->body('Accueil, page contact et mentions légales. Rechargez la fiche dans quelques instants (worker requis).')
+                    ->success()
+                    ->send();
+            });
     }
 
     /**

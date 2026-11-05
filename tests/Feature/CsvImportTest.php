@@ -251,7 +251,8 @@ it('enregistre la source et la date de collecte de chaque contact', function () 
     expect(Contact::all())->each(fn ($contact) => $contact
         ->source->toBe(DataSource::CsvImport)
         ->collected_at->toDateTimeString()->toBe('2026-11-04 10:00:00')
-        ->verification->toBe(ContactVerification::Pending));
+        // M7 : chaque adresse importée est ensuite vérifiée (syntaxe + MX, DNS simulé).
+        ->verification->toBe(ContactVerification::Valid));
 
     expect(Contact::pluck('type', 'email')->all())->toBe([
         'contact@a.example' => ContactType::Generic,

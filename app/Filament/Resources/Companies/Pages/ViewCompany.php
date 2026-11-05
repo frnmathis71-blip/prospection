@@ -14,6 +14,7 @@ class ViewCompany extends ViewRecord
     {
         return [
             CompanyResource::analyzeAction(),
+            CompanyResource::findEmailsAction(),
             EditAction::make(),
         ];
     }

@@ -36,6 +36,12 @@ php artisan make:filament-user
 - Score de priorité (0-100) : onglet « À traiter » de la liste Entreprises, du meilleur au moins bon ; détail
   « Pourquoi ce score ? » sur chaque fiche ; poids modifiables dans « Réglages du score ».
   Recalcul manuel : `php artisan app:recalculate-scores`.
+- Emails de contact : cherchés automatiquement après l'analyse d'un site en ligne (accueil, page contact,
+  mentions légales) ; sinon « Chercher les emails » (fiche ou action groupée) ou `php artisan app:find-emails`.
+  Chaque adresse est vérifiée (syntaxe + MX) ; `php artisan app:verify-emails` vérifie celles encore « À vérifier ».
+  Les adresses personnelles (gmail.com, orange.fr…) sont dans Contacts → « À revoir », à valider à la main.
+- Liste d'appels : prospects à traiter avec un téléphone mais sans email utilisable, avec le bouton
+  « Résultat de l'appel » (noté dans l'historique).
 - Tableau de bord : état de la file (tâches en attente, worker arrêté, échecs) et suivi des imports
   (en attente, en cours avec progression, terminé, rapport d'erreurs), mis à jour toutes les 5 secondes.
 

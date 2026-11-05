@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Contacts;
 
+use App\Enums\ActivityType;
 use App\Enums\ContactType;
 use App\Enums\ContactVerification;
 use App\Enums\DataSource;
@@ -10,6 +11,7 @@ use App\Filament\Resources\Contacts\Pages\ManageContacts;
 use App\Models\Contact;
 use App\Models\SuppressionEntry;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
@@ -71,8 +73,14 @@ class ContactResource extends Resource
                     ->label('Entreprise')
                     ->searchable()
                     ->url(fn (Contact $record) => CompanyResource::getUrl('view', ['record' => $record->company_id])),
-                TextColumn::make('type')->label('Type')->badge(),
-                TextColumn::make('verification')->label('Vérification')->badge(),
+                TextColumn::make('type')
+                    ->label('Type')
+                    ->badge()
+                    ->description(fn (Contact $record) => $record->needsReview() ? 'À revoir' : null),
+                TextColumn::make('verification')
+                    ->label('Vérification')
+                    ->badge()
+                    ->tooltip(fn (Contact $record) => $record->verification_note),
                 IconColumn::make('suppressed')
                     ->label('Opposition')
                     ->state(fn (Contact $record) => $record->isSuppressed())
@@ -86,6 +94,8 @@ class ContactResource extends Resource
                     ->label('Source / collecté le')
                     ->badge()
                     ->description(fn (Contact $record) => $record->collected_at?->format('d/m/Y'))
+                    ->url(fn (Contact $record) => $record->source_url, shouldOpenInNewTab: true)
+                    ->tooltip(fn (Contact $record) => $record->source_url ? 'Trouvé sur '.$record->source_url : null)
                     ->sortable(['collected_at']),
             ])
             ->filters([
@@ -100,9 +110,44 @@ class ContactResource extends Resource
                     ),
             ])
             ->recordActions([
+                self::approveAction(),
                 EditAction::make()->iconButton()->tooltip('Modifier'),
                 DeleteAction::make()->iconButton()->tooltip('Supprimer'),
             ]);
+    }
+
+    /**
+     * M7 : validation à la main d'une adresse personnelle (gmail.com, orange.fr…), après avoir
+     * vérifié qu'elle sert bien à l'activité professionnelle.
+     */
+    public static function approveAction(): Action
+    {
+        return Action::make('approve')
+            ->label('Valider')
+            ->tooltip('Adresse personnelle utilisée pour l’activité : autoriser la prospection')
+            ->icon(Heroicon::OutlinedCheckBadge)
+            ->color('warning')
+            ->iconButton()
+            ->visible(fn (Contact $record) => $record->needsReview())
+            ->requiresConfirmation()
+            ->modalHeading('Valider cette adresse personnelle ?')
+            ->modalDescription('À faire seulement si l’adresse sert clairement à l’activité de l’entreprise (affichée sur son site, sa vitrine ou ses documents).')
+            ->action(function (Contact $record) {
+                $record->update(['reviewed_at' => now()]);
+                $record->company?->activities()->create([
+                    'type' => ActivityType::Note,
+                    'content' => "Adresse personnelle {$record->email} validée pour la prospection.",
+                    'occurred_at' => now(),
+                ]);
+            });
+    }
+
+    /**
+     * Adresses personnelles pas encore validées à la main.
+     */
+    public static function whereNeedsReview(Builder $query): Builder
+    {
+        return $query->where('type', ContactType::Personal)->whereNull('reviewed_at');
     }
 
     /**

@@ -63,6 +63,15 @@ return [
         'slow_below' => 50, // score mobile en dessous duquel « le site est lent sur mobile »
     ],
 
+    // Recherche d'emails (M7) : accueil, page contact et mentions légales, robots.txt respecté,
+    // avec un délai entre deux pages d'un même site. Aucune adresse n'est devinée.
+    'email_search' => [
+        'timeout' => 15,
+        'delay_seconds' => (int) env('PROSPECTION_EMAIL_SEARCH_DELAY', 2),
+        'per_minute' => (int) env('PROSPECTION_EMAIL_SEARCHES_PER_MINUTE', 10),
+        'max_emails_per_site' => 5, // minimisation : on ne garde pas des listes entières
+    ],
+
     // Enrichissements par minute (OpenStreetMap + devinette), pour un usage raisonnable.
     'enrichments_per_minute' => (int) env('PROSPECTION_ENRICHMENTS_PER_MINUTE', 20),
 

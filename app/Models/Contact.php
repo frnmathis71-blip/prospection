@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ContactType;
 use App\Enums\ContactVerification;
 use App\Enums\DataSource;
+use App\Jobs\VerifyContact;
 use Database\Factories\ContactFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * Adresse email d'une entreprise, avec sa source et sa date de collecte (table contacts).
  */
-#[Fillable(['company_id', 'email', 'type', 'source', 'collected_at', 'verification', 'verified_at'])]
+#[Fillable(['company_id', 'email', 'type', 'source', 'source_url', 'collected_at', 'verification', 'verified_at', 'verification_note', 'reviewed_at'])]
 class Contact extends Model
 {
     /** @use HasFactory<ContactFactory> */
@@ -35,7 +36,26 @@ class Contact extends Model
             'verification' => ContactVerification::class,
             'collected_at' => 'datetime',
             'verified_at' => 'datetime',
+            'reviewed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * M7 : toute nouvelle adresse est vérifiée (syntaxe + MX) en tâche de fond, quelle que soit
+     * sa source (site, OpenStreetMap, import, saisie manuelle).
+     */
+    protected static function booted(): void
+    {
+        static::created(fn (Contact $contact) => VerifyContact::dispatch($contact));
+    }
+
+    /**
+     * Adresse personnelle (messagerie grand public) pas encore validée à la main : à revoir avant
+     * toute prospection (cahier des charges, section RGPD).
+     */
+    public function needsReview(): bool
+    {
+        return $this->type === ContactType::Personal && $this->reviewed_at === null;
     }
 
     /**

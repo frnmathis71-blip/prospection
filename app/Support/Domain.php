@@ -60,6 +60,18 @@ class Domain
         'club-internet.fr', 'gmx.fr', 'gmx.com', 'protonmail.com', 'proton.me',
     ];
 
+    /** Adresses jetables (M7) : jamais une adresse de contact d'entreprise, marquées invalides. */
+    public const DISPOSABLE_MAILBOXES = [
+        'yopmail.com', 'yopmail.fr', 'mailinator.com', 'guerrillamail.com', 'guerrillamail.info', 'sharklasers.com',
+        '10minutemail.com', 'temp-mail.org', 'tempmail.com', 'trashmail.com', 'trashmail.fr', 'jetable.org',
+        'getnada.com', 'maildrop.cc', 'dispostable.com', 'throwawaymail.com', 'mailnesia.com', 'spambox.us',
+    ];
+
+    public static function isDisposable(string $domain): bool
+    {
+        return in_array(mb_strtolower($domain), self::DISPOSABLE_MAILBOXES, true);
+    }
+
     /**
      * « https://www.Plombier-Martin.fr/contact » → « plombier-martin.fr ».
      * Renvoie null pour une adresse vide, invalide ou un hébergeur partagé.
