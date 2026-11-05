@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Email de prospection prévu ou envoyé (table emails).
  */
-#[Fillable(['contact_id', 'campaign_id', 'sequence_step_id', 'template_id', 'subject', 'status', 'sent_at', 'message_id'])]
+#[Fillable(['contact_id', 'company_id', 'campaign_id', 'sequence_step_id', 'template_id', 'subject', 'status', 'sent_at', 'message_id', 'note'])]
 class Email extends Model
 {
     /** @use HasFactory<EmailFactory> */
@@ -34,6 +34,12 @@ class Email extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class);
+    }
+
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     /** @return BelongsTo<Campaign, $this> */

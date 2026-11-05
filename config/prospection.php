@@ -102,6 +102,18 @@ return [
         'test_recipients' => array_values(array_filter(array_map('trim', explode(',', (string) env('EMAIL_TEST_RECIPIENTS', ''))))),
     ],
 
+    /*
+    | Envoi (M9) : jours ouvrés (hors week-end et jours fériés), créneaux horaires, espacement
+    | aléatoire entre deux emails et plafond quotidien global (préchauffage du domaine, qui
+    | s'ajoute aux quotas de chaque campagne).
+    */
+    'sending' => [
+        'timezone' => 'Europe/Paris',
+        'slots' => [['08:00', '11:00'], ['14:00', '17:00']],
+        'spacing_minutes' => [2, 6],
+        'daily_cap' => (int) env('SENDING_DAILY_CAP', 10),
+    ],
+
     // Enrichissements par minute (OpenStreetMap + devinette), pour un usage raisonnable.
     'enrichments_per_minute' => (int) env('PROSPECTION_ENRICHMENTS_PER_MINUTE', 20),
 

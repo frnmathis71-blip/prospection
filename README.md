@@ -46,6 +46,10 @@ php artisan make:filament-user
   Renseigner l'identité de l'expéditeur dans le `.env` (`SENDER_NAME`, `SENDER_ADDRESS`, `SENDER_SIRET`) et ses
   propres adresses de test (`EMAIL_TEST_RECIPIENTS`). « Aperçu » montre l'email rendu avec un vrai prospect ;
   « M'envoyer un test » l'envoie à ces adresses uniquement (worker requis).
+- Campagnes : menu « Campagnes » → créer (séquence, liste ciblée, quotas) → « Lancer la campagne » (confirmation
+  explicite). Les emails partent ensuite un par un, jours ouvrés, 8 h-11 h et 14 h-17 h, 2 à 6 minutes d'écart :
+  le worker ET le planificateur doivent tourner (`php artisan schedule:work` en local). Plafond global du domaine :
+  `SENDING_DAILY_CAP`. Séquences J0 / J+4 / J+12 de départ : créées par `TemplateSeeder`.
 - Tableau de bord : état de la file (tâches en attente, worker arrêté, échecs) et suivi des imports
   (en attente, en cours avec progression, terminé, rapport d'erreurs), mis à jour toutes les 5 secondes.
 

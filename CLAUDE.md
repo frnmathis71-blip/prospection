@@ -89,6 +89,15 @@ cahier des charges, section « Interdits — à ne jamais faire », et s'appliqu
   `unsubscribe` (`/desinscription?e=…`, GET et POST One-Click, sans CSRF) → liste d'opposition. L'aperçu Filament
   utilise un lien NON signé (`preview: true`) pour ne jamais désinscrire un prospect par erreur. « M'envoyer un
   test » : uniquement vers `EMAIL_TEST_RECIPIENTS`, par la file. Templates de départ : `TemplateSeeder`.
+- Envoi (M9) : une campagne (liste ciblée `campaigns.criteria` + séquence + quotas) naît en brouillon ; seul
+  l'utilisateur la lance (action « Lancer la campagne » + case de confirmation). Le lancement met en file les
+  emails de l'étape 1 (`CampaignAudience::enqueue`, une adresse envoyable par entreprise, unique
+  campaign/company/step en base) ; RIEN ne part au lancement. Le job planifié `SendNextEmail` (chaque minute,
+  `tries = 1`) appelle `EmailSender::sendNext()` : au plus un email, sous verrou, si jour ouvré + créneau
+  (`App\Support\BusinessCalendar`, jours fériés compris), espacement aléatoire écoulé (cache `sending:next-at`),
+  plafond global `SENDING_DAILY_CAP` et quotas de la campagne non atteints. `reasonNotToSend()` revérifie juste
+  avant l'envoi (liste d'opposition, statut, vérification, revue) : sinon l'email est annulé avec sa raison.
+  Tests : heure de Paris simulée (`travelTo`), `Mail::fake()`.
 - Données OpenStreetMap : mentionner « © contributeurs OpenStreetMap » là où elles sont affichées.
 - Données de démo (`DemoSeeder`) : entreprises fictives, adresses en `.example` uniquement (domaine
   réservé, aucun email ne peut y arriver), jamais chargées en production.

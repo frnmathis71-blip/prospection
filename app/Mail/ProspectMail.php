@@ -19,7 +19,7 @@ class ProspectMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public RenderedEmail $email, public bool $isTest = false) {}
+    public function __construct(public RenderedEmail $email, public bool $isTest = false, public ?string $messageId = null) {}
 
     public function envelope(): Envelope
     {
@@ -28,7 +28,8 @@ class ProspectMail extends Mailable
 
     public function headers(): Headers
     {
-        return new Headers(text: $this->email->unsubscribeUrl ? [
+        // Message-ID connu à l'avance : il relie les réponses à cet email (M10).
+        return new Headers(messageId: $this->messageId, text: $this->email->unsubscribeUrl ? [
             'List-Unsubscribe' => '<'.$this->email->unsubscribeUrl.'>',
             'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click',
         ] : []);

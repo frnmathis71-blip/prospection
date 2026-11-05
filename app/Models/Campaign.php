@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Campagne d'envoi (table campaigns). Toujours créée en brouillon :
  * seul l'utilisateur déclenche un envoi réel.
  */
-#[Fillable(['name', 'search_id', 'sequence_id', 'daily_quota', 'hourly_quota', 'status', 'started_at'])]
+#[Fillable(['name', 'search_id', 'sequence_id', 'criteria', 'daily_quota', 'hourly_quota', 'status', 'started_at'])]
 class Campaign extends Model
 {
     /** @use HasFactory<CampaignFactory> */
@@ -31,6 +31,7 @@ class Campaign extends Model
             'daily_quota' => 'integer',
             'hourly_quota' => 'integer',
             'started_at' => 'datetime',
+            'criteria' => 'array',
         ];
     }
 

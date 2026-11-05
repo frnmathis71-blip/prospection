@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\CampaignStatus;
 use App\Enums\ContactVerification;
 use App\Enums\ProspectStatus;
 use App\Jobs\AnalyzeWebsite;
@@ -7,11 +8,14 @@ use App\Jobs\FindContactEmails;
 use App\Jobs\QueueHealthCheck;
 use App\Jobs\RecalculateScores;
 use App\Jobs\RunCompanySearch;
+use App\Jobs\SendNextEmail;
 use App\Jobs\VerifyContact;
+use App\Models\Campaign;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Search;
 use App\Services\EmailFinder;
+use App\Support\BusinessCalendar;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Str;
@@ -79,6 +83,12 @@ Artisan::command('app:verify-emails', function () {
 
     $this->info("{$count} vérification(s) d'email mise(s) en file.");
 })->purpose('Vérifie (syntaxe + MX) les emails encore « À vérifier » (M7)');
+
+// Envoi (mission M9) : chaque minute, au plus un email part, si une campagne est en cours et que
+// l'heure est dans un créneau d'envoi (jours ouvrés, 8 h-11 h et 14 h-17 h). Tout passe par la file.
+Schedule::job(new SendNextEmail)
+    ->everyMinute()
+    ->when(fn () => BusinessCalendar::isSendingTime() && Campaign::query()->where('status', CampaignStatus::Active)->exists());
 
 // Recherches récurrentes (mission M4) : « Plombiers 71 — chaque lundi ».
 Schedule::command('app:run-recurring-searches weekly')->weeklyOn(1, '07:00')->timezone('Europe/Paris');

@@ -3,11 +3,12 @@
 namespace Database\Seeders;
 
 use App\Enums\TemplateAngle;
+use App\Models\Sequence;
 use App\Models\Template;
 use Illuminate\Database\Seeder;
 
 /**
- * Templates de départ (mission M8), à relire et adapter dans Filament.
+ * Templates de départ (mission M8) et séquences J0 / J+4 / J+12 (M9), à relire et adapter dans Filament.
  * Sans risque en production : un template déjà présent (même nom) n'est jamais modifié.
  *
  *     php artisan db:seed --class=TemplateSeeder
@@ -18,6 +19,23 @@ class TemplateSeeder extends Seeder
     {
         foreach (self::templates() as $template) {
             Template::query()->firstOrCreate(['name' => $template['name']], $template);
+        }
+
+        // Séquences J0 / J+4 / J+12 (jours ouvrés), une par angle.
+        foreach (['sans site' => 'J0 — Sans site', 'site obsolète' => 'J0 — Site obsolète'] as $label => $first) {
+            $sequence = Sequence::query()->firstOrCreate(['name' => "J0 / J+4 / J+12 — {$label}"]);
+
+            if ($sequence->steps()->exists()) {
+                continue;
+            }
+
+            foreach ([[1, 0, $first], [2, 4, "J+4 — Relance ({$label})"], [3, 12, "J+12 — Dernière relance ({$label})"]] as [$position, $delay, $name]) {
+                $sequence->steps()->create([
+                    'position' => $position,
+                    'delay_days' => $delay,
+                    'template_id' => Template::query()->where('name', $name)->value('id'),
+                ]);
+            }
         }
     }
 
