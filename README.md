@@ -42,6 +42,10 @@ php artisan make:filament-user
   Les adresses personnelles (gmail.com, orange.fr…) sont dans Contacts → « À revoir », à valider à la main.
 - Liste d'appels : prospects à traiter avec un téléphone mais sans email utilisable, avec le bouton
   « Résultat de l'appel » (noté dans l'historique).
+- Templates d'email : menu « Templates ». Templates de départ à relire : `php artisan db:seed --class=TemplateSeeder`.
+  Renseigner l'identité de l'expéditeur dans le `.env` (`SENDER_NAME`, `SENDER_ADDRESS`, `SENDER_SIRET`) et ses
+  propres adresses de test (`EMAIL_TEST_RECIPIENTS`). « Aperçu » montre l'email rendu avec un vrai prospect ;
+  « M'envoyer un test » l'envoie à ces adresses uniquement (worker requis).
 - Tableau de bord : état de la file (tâches en attente, worker arrêté, échecs) et suivi des imports
   (en attente, en cours avec progression, terminé, rapport d'erreurs), mis à jour toutes les 5 secondes.
 

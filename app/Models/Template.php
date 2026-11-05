@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * Modèle d'email (table templates).
  */
-#[Fillable(['name', 'angle', 'sector', 'variant', 'subject', 'body'])]
+#[Fillable(['name', 'angle', 'sector', 'variant', 'subject', 'body', 'cta_label'])]
 class Template extends Model
 {
     /** @use HasFactory<TemplateFactory> */

@@ -72,6 +72,36 @@ return [
         'max_emails_per_site' => 5, // minimisation : on ne garde pas des listes entières
     ],
 
+    /*
+    | Emails de prospection (M8) : identité de l'expéditeur et mentions obligatoires, ajoutées
+    | automatiquement en pied de chaque email. Tant qu'un champ obligatoire est vide, aucun
+    | email ne peut être envoyé (l'aperçu le signale).
+    */
+    'sender' => [
+        'name' => env('SENDER_NAME'),               // ton prénom et ton nom (email envoyé à ton nom)
+        'company' => env('SENDER_COMPANY', 'Codenyr'),
+        'address' => env('SENDER_ADDRESS'),         // adresse postale de l'entreprise
+        'siret' => env('SENDER_SIRET'),
+        'phone' => env('SENDER_PHONE'),             // facultatif
+        'website' => env('SENDER_WEBSITE', 'https://codenyr.fr'),
+        'privacy_url' => env('SENDER_PRIVACY_URL', 'https://codenyr.fr/confidentialite'),
+    ],
+
+    'emails' => [
+        // Bouton unique de l'email : lien vers codenyr.fr avec paramètres UTM (pas de suivi individuel).
+        'cta_url' => env('EMAIL_CTA_URL', 'https://codenyr.fr'),
+        'cta_label' => 'Voir mes réalisations',
+        'utm_source' => 'prospection',
+        'utm_medium' => 'email',
+        // Longueur conseillée du corps (cahier des charges : 80 à 150 mots).
+        'min_words' => 80,
+        'max_words' => 150,
+        // Durée de conservation annoncée dans la mention d'information.
+        'retention_years' => 3,
+        // Adresses (les tiennes) autorisées pour « Envoyer un test », séparées par des virgules.
+        'test_recipients' => array_values(array_filter(array_map('trim', explode(',', (string) env('EMAIL_TEST_RECIPIENTS', ''))))),
+    ],
+
     // Enrichissements par minute (OpenStreetMap + devinette), pour un usage raisonnable.
     'enrichments_per_minute' => (int) env('PROSPECTION_ENRICHMENTS_PER_MINUTE', 20),
 
@@ -125,23 +155,28 @@ return [
     'sectors' => [
         'batiment' => [
             'label' => 'Artisans du bâtiment',
+            'wording' => 'artisans du bâtiment', // variable {secteur} des emails
             'naf' => ['41.20A', '43.12A', '43.21A', '43.22A', '43.22B', '43.29A', '43.31Z', '43.32A', '43.32B', '43.33Z', '43.34Z', '43.91A', '43.91B', '43.99C'],
         ],
         'restauration_commerce' => [
             'label' => 'Restauration et commerces',
+            'wording' => 'restaurants et commerces',
             'naf' => ['56.10A', '56.10C', '56.30Z', '10.71C', '10.71D', '10.13B', '47.22Z', '47.24Z', '47.76Z', '55.10Z', '55.20Z'],
         ],
         'beaute' => [
             'label' => 'Beauté et bien-être',
+            'wording' => 'professionnels de la beauté',
             'naf' => ['96.02A', '96.02B', '96.04Z'],
         ],
         'viticulture' => [
             'label' => 'Viticulture et vins',
+            'wording' => 'domaines viticoles',
             // Vigne, vinification, crémant, eaux-de-vie (marc), négociants, cavistes.
             'naf' => ['01.21Z', '11.02A', '11.02B', '11.01Z', '46.34Z', '47.25Z'],
         ],
         'fermes' => [
             'label' => 'Fermes et producteurs',
+            'wording' => 'producteurs locaux',
             // Maraîchage, fruits, élevages (dont charolais), polyculture-élevage, apiculture,
             // fromageries, primeurs. Le code NAF ne dit pas si la ferme vend en direct :
             // les signaux OpenStreetMap (horaires, boutique) aident à le repérer.
@@ -149,6 +184,7 @@ return [
         ],
         'liberales' => [
             'label' => 'Professions libérales',
+            'wording' => 'professions libérales',
             'naf' => ['69.10Z', '69.20Z', '71.11Z', '75.00Z', '86.21Z', '86.23Z', '86.90E', '68.31Z'],
         ],
     ],

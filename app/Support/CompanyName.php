@@ -106,4 +106,37 @@ class CompanyName
 
         return false;
     }
+
+    /**
+     * Nom présentable dans un email (M8) : « SARL PLOMBERIE MARTIN » → « Plomberie Martin ».
+     * Les noms déjà écrits en casse mixte (« Crêp'80 ») sont gardés tels quels, sans forme juridique.
+     */
+    public static function display(string $name): string
+    {
+        $name = Str::squish($name);
+        $legal = '(?:sarl|sasu|sas|eurl|sci|snc|earl|gaec|scea|scp|selarl|selas|scm|sica|eirl|ei|sa|monsieur|madame)';
+        $stripped = trim((string) preg_replace(["/^{$legal}\.?\s+/iu", "/\s+\(?{$legal}\)?\.?$/iu"], '', $name));
+        $name = $stripped !== '' ? $stripped : $name;
+
+        return self::titleIfUppercase($name);
+    }
+
+    /**
+     * « CHALON-SUR-SAONE » → « Chalon-sur-Saone » ; un texte en casse mixte reste inchangé.
+     */
+    public static function titleIfUppercase(string $text): string
+    {
+        if ($text !== mb_strtoupper($text)) {
+            return $text;
+        }
+
+        $title = mb_convert_case(mb_strtolower($text), MB_CASE_TITLE);
+
+        // Articles en minuscules à l'intérieur du nom (« Domaine Des Pres » → « Domaine des Pres »).
+        return preg_replace_callback(
+            '/(?<=[\s-])(De|Du|Des|La|Le|Les|Et|Sur|Sous|En|Aux|Au)(?=[\s-])/u',
+            fn (array $match) => mb_strtolower($match[1]),
+            $title,
+        );
+    }
 }

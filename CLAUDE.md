@@ -80,6 +80,15 @@ cahier des charges, section « Interdits — à ne jamais faire », et s'appliqu
   `Contact::needsReview()` tant qu'elle n'est pas validée à la main (onglet « À revoir ») : à exclure des envois (M9).
   Liste d'appels : page `CallList`, scope `Company::toCall()` (à traiter + téléphone + aucun email non invalide).
   Tests : le DNS est simulé partout (`Tests\Fakes\FakeDnsResolver`, branché dans `tests/Pest.php`).
+- Templates (M8) : `App\Services\TemplateRenderer` rend un `Template` pour une entreprise (+ contact) en
+  `RenderedEmail` (objet, HTML, texte brut, `blocking`, `warnings`). Variables `TemplateRenderer::VARIABLES`,
+  valeur de secours `{variable|secours}` ; variable vide sans secours, variable inconnue ou identité de l'expéditeur
+  incomplète (`config('prospection.sender')`, .env `SENDER_*`) = envoi bloqué (`canBeSent()`). Bouton UTM, mention
+  d'information, confidentialité et désinscription ajoutés automatiquement ; aucune image (pixel) possible.
+  Mailable `App\Mail\ProspectMail` (en-têtes List-Unsubscribe). Désinscription : route publique signée
+  `unsubscribe` (`/desinscription?e=…`, GET et POST One-Click, sans CSRF) → liste d'opposition. L'aperçu Filament
+  utilise un lien NON signé (`preview: true`) pour ne jamais désinscrire un prospect par erreur. « M'envoyer un
+  test » : uniquement vers `EMAIL_TEST_RECIPIENTS`, par la file. Templates de départ : `TemplateSeeder`.
 - Données OpenStreetMap : mentionner « © contributeurs OpenStreetMap » là où elles sont affichées.
 - Données de démo (`DemoSeeder`) : entreprises fictives, adresses en `.example` uniquement (domaine
   réservé, aucun email ne peut y arriver), jamais chargées en production.
