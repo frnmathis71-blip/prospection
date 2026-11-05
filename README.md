@@ -58,6 +58,11 @@ php artisan make:filament-user
   désinscriptions sur 7 jours), taux de réponse par template / secteur / zone. Coupe-circuit : au-delà de 3 % de
   rebonds ou 2 % de désinscriptions, toutes les campagnes passent en pause ; « Réarmer le coupe-circuit » dans
   Campagnes, après vérification.
+- Mise en production : guide complet dans [`docs/deploiement.md`](docs/deploiement.md) (VPS, HTTPS, Horizon
+  supervisé, cron, sauvegardes, restauration, campagne pilote). Avant de lancer : `php artisan app:production-check`.
+- RGPD : menu « Registre RGPD » (fiche du traitement, export des données d'une personne) ; purge automatique des
+  prospects sans réponse depuis 3 ans (`php artisan app:purge-prospects --dry-run` pour voir combien) ;
+  sauvegarde chiffrée de la base chaque nuit.
 - Tableau de bord : état de la file (tâches en attente, worker arrêté, échecs) et suivi des imports
   (en attente, en cours avec progression, terminé, rapport d'erreurs), mis à jour toutes les 5 secondes.
 

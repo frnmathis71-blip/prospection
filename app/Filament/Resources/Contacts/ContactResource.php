@@ -6,6 +6,7 @@ use App\Enums\ActivityType;
 use App\Enums\ContactType;
 use App\Enums\ContactVerification;
 use App\Enums\DataSource;
+use App\Filament\Pages\Registry;
 use App\Filament\Resources\Companies\CompanyResource;
 use App\Filament\Resources\Contacts\Pages\ManageContacts;
 use App\Models\Contact;
@@ -111,6 +112,12 @@ class ContactResource extends Resource
             ])
             ->recordActions([
                 self::approveAction(),
+                Action::make('exportData')
+                    ->iconButton()
+                    ->icon(Heroicon::OutlinedArrowDownTray)
+                    ->color('gray')
+                    ->tooltip('Exporter les données de cette adresse (RGPD)')
+                    ->action(fn (Contact $record) => Registry::download($record->email)),
                 EditAction::make()->iconButton()->tooltip('Modifier'),
                 DeleteAction::make()->iconButton()->tooltip('Supprimer'),
             ]);

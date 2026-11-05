@@ -1,0 +1,5 @@
+# Codenyr Prospection — planificateur Laravel (M12).
+# À installer pour l'utilisateur www-data : crontab -u www-data deploy/crontab
+# Une seule ligne suffit : Laravel lance ensuite chaque tâche à son heure (envois, relances,
+# lecture de la boîte, coupe-circuit, recherches récurrentes, purge RGPD, sauvegardes).
+* * * * * cd /var/www/prospection && php artisan schedule:run >> /dev/null 2>&1

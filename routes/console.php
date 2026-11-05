@@ -18,9 +18,13 @@ use App\Models\Search;
 use App\Services\CircuitBreaker;
 use App\Services\EmailFinder;
 use App\Services\Inbox\Mailbox;
+use App\Services\PersonalDataExporter;
+use App\Services\ProductionCheck;
+use App\Services\ProspectPurger;
 use App\Support\BusinessCalendar;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 Artisan::command('app:queue-check', function () {
@@ -109,6 +113,48 @@ Schedule::job(new ReadInbox)->everyFiveMinutes()->when(fn () => app(Mailbox::cla
 
 // Coupe-circuit (M11) : contrôle horaire des rebonds et désinscriptions sur 7 jours.
 Schedule::call(fn () => app(CircuitBreaker::class)->check())->hourly()->name('coupe-circuit');
+
+Artisan::command('app:purge-prospects {--dry-run : Afficher le nombre sans rien supprimer}', function (ProspectPurger $purger) {
+    if ($this->option('dry-run')) {
+        $this->info($purger->candidates()->count().' prospect(s) seraient supprimés (sans réponse depuis plus de 3 ans).');
+
+        return;
+    }
+
+    $this->info($purger->purge().' prospect(s) supprimés. La liste d’opposition est conservée.');
+})->purpose('Purge RGPD : prospects sans réponse depuis plus de 3 ans (M12)');
+
+Artisan::command('app:export-person {email : Adresse de la personne}', function (string $email, PersonalDataExporter $exporter) {
+    $path = 'exports/rgpd-'.Str::slug($email).'-'.now()->format('Ymd-His').'.json';
+    Storage::disk('local')->put($path, json_encode($exporter->export($email), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+
+    $this->info('Export enregistré : '.Storage::disk('local')->path($path));
+})->purpose('Exporte toutes les données d’une personne, avec leur source (droit d’accès RGPD, M12)');
+
+Artisan::command('app:production-check', function (ProductionCheck $check) {
+    $problems = $check->problems();
+
+    if ($problems === []) {
+        $this->info('Configuration de production : tout est en ordre.');
+
+        return 0;
+    }
+
+    $this->error(count($problems).' point(s) à corriger :');
+    foreach ($problems as $problem) {
+        $this->line(' - '.$problem);
+    }
+
+    return 1;
+})->purpose('Vérifie la configuration avant la mise en production (M12)');
+
+// RGPD (M12) : purge des prospects sans réponse depuis plus de 3 ans, chaque nuit.
+Schedule::command('app:purge-prospects')->dailyAt('03:30')->timezone('Europe/Paris');
+
+// Sauvegardes (M12) : base de données chaque nuit, nettoyage des anciennes, contrôle de fraîcheur.
+Schedule::command('backup:clean')->dailyAt('01:00')->timezone('Europe/Paris');
+Schedule::command('backup:run --only-db')->dailyAt('01:30')->timezone('Europe/Paris');
+Schedule::command('backup:monitor')->dailyAt('09:00')->timezone('Europe/Paris');
 
 // Recherches récurrentes (mission M4) : « Plombiers 71 — chaque lundi ».
 Schedule::command('app:run-recurring-searches weekly')->weeklyOn(1, '07:00')->timezone('Europe/Paris');

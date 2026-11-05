@@ -30,6 +30,15 @@ return [
 
     'disks' => [
 
+        // Sauvegardes (M12) : disque local par défaut ; en production, ajouter un disque distant
+        // (S3 compatible) dans BACKUP_DISKS pour survivre à la perte du serveur.
+        'backups' => [
+            'driver' => 'local',
+            'root' => storage_path('app/backups'),
+            'serve' => false,
+            'throw' => true,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

@@ -111,6 +111,13 @@ cahier des charges, section « Interdits — à ne jamais faire », et s'appliqu
   désinscriptions sur 7 jours (depuis le dernier réarmement) → toutes les campagnes actives en pause + notification ;
   vérifié avant chaque envoi, après chaque rebond ou désinscription, et chaque heure. Tant qu'il est déclenché, rien
   ne part et aucune campagne ne se lance ni ne reprend ; réarmement manuel (liste des campagnes).
+- RGPD et production (M12) : `App\Services\ProspectPurger` (prospects sans réponse dont le dernier contact, la
+  collecte ou la dernière note date de plus de 3 ans ; statuts Replied / QuoteSent / Won conservés ; la liste
+  d'opposition n'est JAMAIS touchée), planifié chaque nuit (`app:purge-prospects`). `App\Services\PersonalDataExporter`
+  (droit d'accès : tout ce qui concerne une adresse, avec sa source), page Filament « Registre RGPD » et
+  `app:export-person`. Sauvegardes spatie/laravel-backup (base seule, chiffrée par `BACKUP_ARCHIVE_PASSWORD`, disques
+  `BACKUP_DISKS`). `app:production-check` liste ce qui manque avant la production. Déploiement : `docs/deploiement.md`
+  et `deploy/` (nginx, Supervisor/Horizon, crontab, deploy.sh).
 - Données OpenStreetMap : mentionner « © contributeurs OpenStreetMap » là où elles sont affichées.
 - Données de démo (`DemoSeeder`) : entreprises fictives, adresses en `.example` uniquement (domaine
   réservé, aucun email ne peut y arriver), jamais chargées en production.
