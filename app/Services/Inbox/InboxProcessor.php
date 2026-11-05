@@ -11,6 +11,7 @@ use App\Models\Email;
 use App\Models\InboundMessage as InboundRecord;
 use App\Models\SuppressionEntry;
 use App\Models\User;
+use App\Services\CircuitBreaker;
 use App\Services\CompanyScorer;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -143,6 +144,9 @@ class InboxProcessor
             ]);
             app(CompanyScorer::class)->refresh($company->fresh());
         }
+
+        // M11 : un rebond peut faire dépasser le seuil du coupe-circuit.
+        app(CircuitBreaker::class)->check();
 
         return [$soft ? self::SOFT_BOUNCE : self::HARD_BOUNCE, $email];
     }

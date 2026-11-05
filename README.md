@@ -54,6 +54,10 @@ php artisan make:filament-user
   toutes les 5 minutes (IMAP, lecture seule) dès que `IMAP_HOST`, `IMAP_USERNAME` et `IMAP_PASSWORD` sont
   renseignés : une réponse arrête la séquence et s'affiche dans la cloche ; les absences sont ignorées ; un rebond
   dur ajoute l'adresse à la liste d'opposition. Lecture manuelle : `php artisan app:read-inbox`.
+- Tableau de bord : entonnoir de prospection et chiffre d'affaires signé, santé de l'envoi (rebonds et
+  désinscriptions sur 7 jours), taux de réponse par template / secteur / zone. Coupe-circuit : au-delà de 3 % de
+  rebonds ou 2 % de désinscriptions, toutes les campagnes passent en pause ; « Réarmer le coupe-circuit » dans
+  Campagnes, après vérification.
 - Tableau de bord : état de la file (tâches en attente, worker arrêté, échecs) et suivi des imports
   (en attente, en cours avec progression, terminé, rapport d'erreurs), mis à jour toutes les 5 secondes.
 

@@ -32,6 +32,7 @@ class EmailSender
     public function __construct(
         private readonly TemplateRenderer $renderer,
         private readonly FollowUpScheduler $followUps,
+        private readonly CircuitBreaker $circuitBreaker,
     ) {}
 
     /**
@@ -46,6 +47,11 @@ class EmailSender
     {
         // M10 : relances arrivées à échéance (J+4, J+12 en jours ouvrés).
         $this->followUps->enqueueDue();
+
+        // M11 : rebonds ou désinscriptions anormaux sur 7 jours = plus aucun envoi.
+        if ($this->circuitBreaker->check()) {
+            return null;
+        }
 
         if (! BusinessCalendar::isSendingTime()) {
             return null;

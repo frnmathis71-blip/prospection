@@ -105,6 +105,12 @@ cahier des charges, section « Interdits — à ne jamais faire », et s'appliqu
   `App\Services\Inbox\Mailbox` (IMAP réel `ImapMailbox`, lecture seule ; simulée dans les tests), job planifié
   `ReadInbox`, `InboxProcessor` (réponse, absence ignorée, rebond dur → invalide + opposition, rebond temporaire →
   une nouvelle tentative), chaque message traité une fois (`inbound_messages`). Messages de test : `tests/Fixtures/inbox/*.eml`.
+- Tableau de bord (M11) : `App\Services\ProspectingStats` (entonnoir emboîté trouvés → avec email → contactés →
+  réponses → devis → signés ; taux par template A/B, secteur, zone ; santé de l'envoi) et widgets `FunnelWidget`,
+  `SendingHealthWidget`, `RatesWidget`. Coupe-circuit `App\Services\CircuitBreaker` : > 3 % de rebonds ou > 2 % de
+  désinscriptions sur 7 jours (depuis le dernier réarmement) → toutes les campagnes actives en pause + notification ;
+  vérifié avant chaque envoi, après chaque rebond ou désinscription, et chaque heure. Tant qu'il est déclenché, rien
+  ne part et aucune campagne ne se lance ni ne reprend ; réarmement manuel (liste des campagnes).
 - Données OpenStreetMap : mentionner « © contributeurs OpenStreetMap » là où elles sont affichées.
 - Données de démo (`DemoSeeder`) : entreprises fictives, adresses en `.example` uniquement (domaine
   réservé, aucun email ne peut y arriver), jamais chargées en production.

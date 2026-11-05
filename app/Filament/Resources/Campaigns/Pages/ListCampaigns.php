@@ -13,6 +13,7 @@ class ListCampaigns extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            CampaignResource::resetCircuitBreakerAction(),
             CreateAction::make(),
         ];
     }

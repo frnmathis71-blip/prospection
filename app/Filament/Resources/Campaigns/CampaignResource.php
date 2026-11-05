@@ -14,6 +14,7 @@ use App\Filament\Resources\Companies\CompanyResource;
 use App\Filament\Resources\Templates\TemplateResource;
 use App\Models\Campaign;
 use App\Services\CampaignAudience;
+use App\Services\CircuitBreaker;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -158,6 +159,10 @@ class CampaignResource extends Resource
             }
         }
 
+        if (app(CircuitBreaker::class)->isTripped()) {
+            $problems[] = 'Le coupe-circuit est déclenché : le réarmer d’abord (liste des campagnes).';
+        }
+
         if (! $campaign->sequence?->steps()->exists()) {
             $problems[] = 'La séquence n’a aucune étape.';
         }
@@ -242,7 +247,35 @@ class CampaignResource extends Resource
             ->requiresConfirmation()
             ->modalDescription('Les emails encore en file repartent dans les créneaux d’envoi.')
             ->visible(fn (Campaign $record) => $record->status === CampaignStatus::Paused)
-            ->action(fn (Campaign $record) => $record->update(['status' => CampaignStatus::Active]));
+            ->action(function (Campaign $record) {
+                if (app(CircuitBreaker::class)->isTripped()) {
+                    Notification::make()->title('Coupe-circuit déclenché')->body('Réarmez-le d’abord depuis la liste des campagnes.')->danger()->send();
+
+                    return;
+                }
+
+                $record->update(['status' => CampaignStatus::Active]);
+            });
+    }
+
+    /**
+     * Réarmement du coupe-circuit (M11) : après avoir vérifié la liste et la délivrabilité.
+     * Les campagnes restent en pause : à reprendre une par une.
+     */
+    public static function resetCircuitBreakerAction(): Action
+    {
+        return Action::make('resetCircuitBreaker')
+            ->label('Réarmer le coupe-circuit')
+            ->icon(Heroicon::OutlinedShieldCheck)
+            ->color('danger')
+            ->visible(fn () => app(CircuitBreaker::class)->isTripped())
+            ->requiresConfirmation()
+            ->modalHeading('Réarmer le coupe-circuit ?')
+            ->modalDescription(fn () => (app(CircuitBreaker::class)->state()['reason'] ?? '').' Avant de réarmer : vérifier la liste ciblée, les adresses en rebond et la réputation du domaine. Les campagnes restent en pause : reprenez-les une par une. Seuls les incidents postérieurs au réarmement seront comptés.')
+            ->action(function () {
+                app(CircuitBreaker::class)->reset();
+                Notification::make()->title('Coupe-circuit réarmé')->success()->send();
+            });
     }
 
     public static function getRelations(): array

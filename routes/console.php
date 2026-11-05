@@ -15,6 +15,7 @@ use App\Models\Campaign;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Search;
+use App\Services\CircuitBreaker;
 use App\Services\EmailFinder;
 use App\Services\Inbox\Mailbox;
 use App\Support\BusinessCalendar;
@@ -105,6 +106,9 @@ Artisan::command('app:read-inbox', function () {
 
 // Boîte d'envoi (M10) : réponses, absences et rebonds, toutes les 5 minutes.
 Schedule::job(new ReadInbox)->everyFiveMinutes()->when(fn () => app(Mailbox::class)->isConfigured());
+
+// Coupe-circuit (M11) : contrôle horaire des rebonds et désinscriptions sur 7 jours.
+Schedule::call(fn () => app(CircuitBreaker::class)->check())->hourly()->name('coupe-circuit');
 
 // Recherches récurrentes (mission M4) : « Plombiers 71 — chaque lundi ».
 Schedule::command('app:run-recurring-searches weekly')->weeklyOn(1, '07:00')->timezone('Europe/Paris');

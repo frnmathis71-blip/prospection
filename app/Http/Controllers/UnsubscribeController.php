@@ -9,6 +9,7 @@ use App\Enums\SuppressionReason;
 use App\Models\Contact;
 use App\Models\Email;
 use App\Models\SuppressionEntry;
+use App\Services\CircuitBreaker;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -46,6 +47,9 @@ class UnsubscribeController extends Controller
                 ]);
             }
         });
+
+        // M11 : trop de désinscriptions = toutes les campagnes en pause.
+        app(CircuitBreaker::class)->check();
 
         return response()->view('unsubscribed', ['email' => $email]);
     }
