@@ -47,6 +47,9 @@ class ContactRecorder
             $company->update(['status' => ProspectStatus::DoNotContact]);
         }
 
+        // M6 : un email (ou une opposition) change la joignabilité, donc le score.
+        app(CompanyScorer::class)->refresh($company->fresh());
+
         return $contact;
     }
 

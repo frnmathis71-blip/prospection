@@ -9,6 +9,7 @@ use App\Enums\DataSource;
 use App\Enums\EmailStatus;
 use App\Enums\ProspectStatus;
 use App\Enums\SuppressionReason;
+use App\Jobs\RecalculateScores;
 use App\Models\Activity;
 use App\Models\Campaign;
 use App\Models\Company;
@@ -125,5 +126,8 @@ class DemoSeeder extends Seeder
             'type' => ActivityType::Call,
             'content' => 'Appel : rappeler la semaine prochaine.',
         ]);
+
+        // M6 : scores calculés avec les vrais critères (et non au hasard).
+        RecalculateScores::dispatchSync();
     }
 }

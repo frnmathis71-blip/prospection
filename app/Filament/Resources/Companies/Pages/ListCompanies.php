@@ -2,19 +2,50 @@
 
 namespace App\Filament\Resources\Companies\Pages;
 
+use App\Enums\ProspectStatus;
 use App\Filament\Imports\CompanyImporter;
 use App\Filament\Resources\Companies\CompanyResource;
+use App\Models\Company;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\ImportAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Artisan;
 
 class ListCompanies extends ListRecords
 {
     protected static string $resource = CompanyResource::class;
+
+    /**
+     * M6 : « À traiter » (par défaut) = prospects actifs pas encore contactés, triés par score.
+     * Une entreprise « Ne pas contacter », désinscrite ou en rebond n'y apparaît jamais.
+     */
+    public function getTabs(): array
+    {
+        return [
+            'a_traiter' => Tab::make('À traiter')
+                ->icon(Heroicon::OutlinedFire)
+                ->modifyQueryUsing(fn (Builder $query) => $query->toProcess())
+                ->badge(fn () => Company::query()->toProcess()->count()),
+            'tous' => Tab::make('Toutes'),
+            'en_cours' => Tab::make('En cours')
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status', [
+                    ProspectStatus::Contacted, ProspectStatus::FollowedUp, ProspectStatus::Replied, ProspectStatus::QuoteSent,
+                ])),
+            'bloquees' => Tab::make('Ne pas contacter')
+                ->icon(Heroicon::OutlinedNoSymbol)
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status', ProspectStatus::BLOCKING)),
+        ];
+    }
+
+    public function getDefaultActiveTab(): string|int|null
+    {
+        return 'a_traiter';
+    }
 
     protected function getHeaderActions(): array
     {

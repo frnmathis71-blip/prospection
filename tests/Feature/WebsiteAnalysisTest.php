@@ -217,7 +217,7 @@ describe('classement', function () {
         Http::fake();
         $company = Company::factory()->create();
 
-        (new AnalyzeWebsite($company))->handle(app(WebsiteAnalyzer::class));
+        app()->call([new AnalyzeWebsite($company), 'handle']);
 
         expect($company->fresh()->website)
             ->state->toBe(WebsiteState::None)

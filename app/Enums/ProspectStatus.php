@@ -22,6 +22,17 @@ enum ProspectStatus: string implements HasColor, HasLabel
     case Bounced = 'bounced';
     case DoNotContact = 'do_not_contact';
 
+    /** Statuts de la liste « À traiter » : prospects pas encore contactés. */
+    public const TO_PROCESS = [self::New, self::Qualified];
+
+    /** Statuts bloquants : ne plus jamais contacter. */
+    public const BLOCKING = [self::Unsubscribed, self::Bounced, self::DoNotContact];
+
+    public function isBlocking(): bool
+    {
+        return in_array($this, self::BLOCKING, true);
+    }
+
     public function getLabel(): string
     {
         return match ($this) {

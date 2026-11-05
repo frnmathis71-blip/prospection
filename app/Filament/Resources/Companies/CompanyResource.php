@@ -89,7 +89,6 @@ class CompanyResource extends Resource
                     ->columns(2)
                     ->schema([
                         Select::make('status')->label('Statut')->options(ProspectStatus::class)->default(ProspectStatus::New)->required(),
-                        TextInput::make('score')->label('Score')->numeric()->minValue(0)->maxValue(100),
                         DatePicker::make('next_action_on')->label('Prochaine action'),
                         TextInput::make('quote_amount')->label('Montant du devis')->numeric()->suffix('€'),
                         Select::make('source')->label('Origine de la donnée')->options(DataSource::class)->default(DataSource::Manual)->required(),
@@ -119,11 +118,26 @@ class CompanyResource extends Resource
                     ->columns(3)
                     ->schema([
                         TextEntry::make('status')->label('Statut')->badge(),
-                        TextEntry::make('score')->label('Score')->placeholder('—'),
+                        TextEntry::make('score')
+                            ->label('Score de priorité')
+                            ->formatStateUsing(fn (?int $state) => $state === null ? null : "{$state}/100")
+                            ->badge()
+                            ->color(fn (?int $state) => self::scoreColor($state))
+                            ->placeholder('—'),
                         TextEntry::make('next_action_on')->label('Prochaine action')->date('d/m/Y')->placeholder('—'),
                         TextEntry::make('quote_amount')->label('Montant du devis')->money('EUR')->placeholder('—'),
                         TextEntry::make('source')->label('Origine de la donnée')->badge(),
                         TextEntry::make('search.name')->label('Recherche d’origine')->placeholder('—'),
+                        TextEntry::make('score_details')
+                            ->label('Pourquoi ce score ?')
+                            ->state(fn (Company $record) => collect($record->score_details ?? [])
+                                ->map(fn (array $line) => '+'.$line['points'].' pts : '.$line['label'])
+                                ->all() ?: null)
+                            ->listWithLineBreaks()
+                            ->bulleted()
+                            ->placeholder('Pas encore calculé')
+                            ->helperText('Poids modifiables dans « Réglages du score ».')
+                            ->columnSpanFull(),
                     ]),
                 Section::make('Site web')
                     ->columns(3)
@@ -239,7 +253,16 @@ class CompanyResource extends Resource
                     ->formatStateUsing(fn (Company $record) => $record->department ? "{$record->city} ({$record->department})" : $record->city)
                     ->description(fn (Company $record) => self::formatPhone($record->phone) ?? 'Pas de téléphone'),
                 TextColumn::make('status')->label('Statut')->badge()->sortable(),
-                TextColumn::make('score')->label('Score')->sortable()->placeholder('—'),
+                TextColumn::make('score')
+                    ->label('Score')
+                    ->badge()
+                    ->color(fn (?int $state) => self::scoreColor($state))
+                    ->sortable()
+                    ->alignCenter()
+                    ->tooltip(fn (Company $record) => collect($record->score_details ?? [])
+                        ->map(fn (array $line) => '+'.$line['points'].' '.$line['label'])
+                        ->implode(' · ') ?: null)
+                    ->placeholder('—'),
                 // État du site en badge, avec l'adresse en dessous : la cellule ouvre le site dans un nouvel onglet.
                 TextColumn::make('website.state')
                     ->label('Site')
@@ -351,6 +374,16 @@ class CompanyResource extends Resource
         $short = preg_replace('#^https?://(www\.)?#', '', rtrim($url, '/'));
 
         return mb_strlen($short) > 26 ? mb_substr($short, 0, 25).'…' : $short;
+    }
+
+    public static function scoreColor(?int $score): ?string
+    {
+        return match (true) {
+            $score === null => null,
+            $score >= 70 => 'success',
+            $score >= 40 => 'warning',
+            default => 'gray',
+        };
     }
 
     /**

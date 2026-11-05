@@ -33,6 +33,9 @@ php artisan make:filament-user
 - Analyse des sites : automatique après une recherche ou un import ; sinon bouton « Analyser les sites »
   (liste Entreprises), « Analyser le site » (fiche) ou `php artisan app:analyze-websites`. Pour le score
   PageSpeed, renseigner une clé gratuite `PAGESPEED_API_KEY` dans le `.env`.
+- Score de priorité (0-100) : onglet « À traiter » de la liste Entreprises, du meilleur au moins bon ; détail
+  « Pourquoi ce score ? » sur chaque fiche ; poids modifiables dans « Réglages du score ».
+  Recalcul manuel : `php artisan app:recalculate-scores`.
 - Tableau de bord : état de la file (tâches en attente, worker arrêté, échecs) et suivi des imports
   (en attente, en cours avec progression, terminé, rapport d'erreurs), mis à jour toutes les 5 secondes.
 

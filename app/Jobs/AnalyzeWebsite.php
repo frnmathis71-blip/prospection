@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Company;
+use App\Services\CompanyScorer;
 use App\Services\WebsiteAnalyzer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -39,7 +40,7 @@ class AnalyzeWebsite implements ShouldQueue
         return now()->addDay();
     }
 
-    public function handle(WebsiteAnalyzer $analyzer): void
+    public function handle(WebsiteAnalyzer $analyzer, CompanyScorer $scorer): void
     {
         $company = $this->company->fresh();
 
@@ -50,5 +51,8 @@ class AnalyzeWebsite implements ShouldQueue
         $website = $company->website ?? $company->website()->make();
 
         $analyzer->analyze($website);
+
+        // M6 : le score dépend surtout du site, il est recalculé après chaque analyse.
+        $scorer->refresh($company->fresh());
     }
 }

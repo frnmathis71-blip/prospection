@@ -9,6 +9,7 @@ use App\Models\Company;
 use App\Models\Search;
 use App\Services\ApiUnavailableException;
 use App\Services\BodaccClient;
+use App\Services\CompanyScorer;
 use App\Services\RechercheEntreprisesClient;
 use App\Services\SearchCriteria;
 use App\Support\CompanyName;
@@ -181,6 +182,7 @@ class RunCompanySearch implements ShouldQueue
                 'occurred_at' => now(),
             ]);
 
+            app(CompanyScorer::class)->refresh($company); // score provisoire, affiné après l'analyse du site
             EnrichCompany::dispatch($company);
             $stats['created']++;
         }

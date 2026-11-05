@@ -66,6 +66,44 @@ return [
     // Enrichissements par minute (OpenStreetMap + devinette), pour un usage raisonnable.
     'enrichments_per_minute' => (int) env('PROSPECTION_ENRICHMENTS_PER_MINUTE', 20),
 
+    /*
+    | Score de priorité (M6) : poids PAR DÉFAUT, modifiables dans « Réglages du score ».
+    | Les points sont additionnés puis ramenés sur 100 (100 = meilleur prospect possible
+    | avec les poids actuels).
+    */
+    'scoring' => [
+        // Opportunité liée au site (critère principal).
+        'website_none' => 60,          // aucun site
+        'website_social_only' => 55,  // réseau social seul
+        'website_directory' => 50,     // annuaire ou mini-site gratuit
+        'website_offline' => 50,       // site hors ligne
+        'website_parking' => 50,       // page parking
+        'website_unknown' => 20,       // pas encore analysé
+        'website_outdated' => 25,      // site obsolète : base, + points par problème
+        'problem_high' => 12,          // problème fort (HTTPS, mobile)
+        'problem_medium' => 6,         // problème moyen (copyright, technologies, lenteur)
+        'problem_low' => 2,            // problème faible (mentions légales, contact)
+        'website_max' => 60,           // plafond de la partie « site »
+        // Joignabilité.
+        'phone' => 8,                 // téléphone connu
+        'email_pro' => 8,             // email générique ou nominatif (non personnel)
+        'email_personal' => 4,         // email personnel seulement (revue manuelle)
+        'osm_active' => 4,             // horaires ou réseaux sociaux renseignés sur OpenStreetMap
+        // Profil de l'entreprise.
+        'new_company' => 12,           // créée il y a moins de 6 mois : cible « création de site »
+        'established' => 8,           // créée il y a 2 ans ou plus : entreprise installée
+        'headcount_small' => 6,       // 1 à 9 salariés
+        'headcount_micro' => 3,        // sans salarié
+        'headcount_medium' => 3,       // 10 à 49 salariés
+        // Bonus par secteur (clés de « sectors »).
+        'sector_batiment' => 4,
+        'sector_restauration_commerce' => 4,
+        'sector_beaute' => 4,
+        'sector_viticulture' => 4,
+        'sector_fermes' => 4,
+        'sector_liberales' => 4,
+    ],
+
     // Zone cible.
     'departments' => [
         '21' => "21 — Côte-d'Or",

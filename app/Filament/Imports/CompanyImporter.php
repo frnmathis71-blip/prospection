@@ -7,6 +7,7 @@ use App\Enums\DataSource;
 use App\Jobs\AnalyzeWebsite;
 use App\Jobs\EnrichCompany;
 use App\Models\Company;
+use App\Services\CompanyScorer;
 use App\Services\ContactRecorder;
 use App\Support\Domain;
 use App\Support\Phone;
@@ -188,6 +189,9 @@ class CompanyImporter extends Importer
         } elseif ($websiteAdded) {
             AnalyzeWebsite::dispatch($this->record);
         }
+
+        // M6 : score provisoire, affiné après l'analyse du site.
+        app(CompanyScorer::class)->refresh($this->record->fresh());
     }
 
     private function saveWebsite(): bool

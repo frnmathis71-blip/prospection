@@ -7,6 +7,8 @@ use App\Enums\ProspectStatus;
 use App\Support\Phone;
 use Database\Factories\CompanyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -46,6 +48,8 @@ class Company extends Model
             'latitude' => 'decimal:6',
             'longitude' => 'decimal:6',
             'osm_signals' => 'array',
+            'score_details' => 'array',
+            'scored_at' => 'datetime',
             'enriched_at' => 'datetime',
         ];
     }
@@ -64,6 +68,19 @@ class Company extends Model
     protected function phone(): Attribute
     {
         return Attribute::set(fn (?string $value) => Phone::normalize($value));
+    }
+
+    /**
+     * Liste « À traiter » : entreprises actives, pas encore contactées, jamais bloquées.
+     *
+     * @param  Builder<Company>  $query
+     */
+    #[Scope]
+    protected function toProcess(Builder $query): void
+    {
+        $query->where('is_active', true)
+            ->whereIn('status', ProspectStatus::TO_PROCESS)
+            ->whereNotIn('status', ProspectStatus::BLOCKING);
     }
 
     /** @return HasOne<Website, $this> */

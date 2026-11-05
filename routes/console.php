@@ -2,6 +2,7 @@
 
 use App\Jobs\AnalyzeWebsite;
 use App\Jobs\QueueHealthCheck;
+use App\Jobs\RecalculateScores;
 use App\Jobs\RunCompanySearch;
 use App\Models\Company;
 use App\Models\Search;
@@ -40,6 +41,12 @@ Artisan::command('app:analyze-websites {--all : Réanalyser aussi les sites déj
 
     $this->info("{$count} analyse(s) de site mise(s) en file (file « enrichment », débit limité).");
 })->purpose('Analyse les sites des entreprises (M5)');
+
+Artisan::command('app:recalculate-scores', function () {
+    RecalculateScores::dispatchSync();
+
+    $this->info('Scores recalculés pour '.Company::count().' entreprise(s).');
+})->purpose('Recalcule le score de priorité de toutes les entreprises (M6)');
 
 // Recherches récurrentes (mission M4) : « Plombiers 71 — chaque lundi ».
 Schedule::command('app:run-recurring-searches weekly')->weeklyOn(1, '07:00')->timezone('Europe/Paris');

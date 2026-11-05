@@ -64,6 +64,11 @@ cahier des charges, section « Interdits — à ne jamais faire », et s'appliqu
   Problèmes = codes `App\Enums\WebsiteProblem` dans `websites.problems` ; libellés en clair via
   `Website::problemLabels()` (réutilisés dans les emails : ne citer que des constats réellement détectés).
   Pages d'exemple des tests : `tests/Fixtures/websites/`.
+- Score (M6) : `App\Services\CompanyScorer` (points ramenés sur 100, détail dans `companies.score_details`).
+  Poids par défaut dans `config/prospection.php` (« scoring »), surchargés par la page « Réglages du score »
+  (table `settings`, clé `scoring_weights`) ; changement de poids → `RecalculateScores`. Recalcul après chaque
+  analyse, contact enregistré, création (recherche, import, formulaire) et modification de fiche. Le score
+  n'est jamais saisi à la main. Liste « À traiter » : scope `Company::toProcess()` (jamais de statut bloquant).
 - Données OpenStreetMap : mentionner « © contributeurs OpenStreetMap » là où elles sont affichées.
 - Données de démo (`DemoSeeder`) : entreprises fictives, adresses en `.example` uniquement (domaine
   réservé, aucun email ne peut y arriver), jamais chargées en production.
