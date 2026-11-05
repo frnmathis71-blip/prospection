@@ -38,7 +38,7 @@ it('affiche la fiche d’une entreprise avec son site et ses contacts', function
         ->assertOk()
         ->assertSee($company->name)
         ->assertSee($contact->email)
-        ->assertSee("Le site n'est pas sécurisé (pas de HTTPS)");
+        ->assertSee('Le site n’est pas sécurisé (pas de HTTPS)', escape: false);
 });
 
 it('trie les entreprises par score décroissant', function () {

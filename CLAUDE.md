@@ -57,6 +57,13 @@ cahier des charges, section « Interdits — à ne jamais faire », et s'appliqu
   une indisponibilité lève `ApiUnavailableException` et le job est remis en file (jamais d'échec brutal).
   Tout site visité passe d'abord par `App\Services\RobotsTxt`. DNS isolé dans `App\Services\DnsResolver`
   (à simuler dans les tests). Réglages et presets NAF : `config/prospection.php`.
+- Analyse des sites (M5) : `App\Jobs\AnalyzeWebsite` (file `enrichment`, RateLimiter « analysis »), lancé après
+  `EnrichCompany`, après un import CSV, par `php artisan app:analyze-websites` ou depuis Filament.
+  `App\Services\WebsiteAnalyzer` : une visite de l'accueil (HTTPS d'abord, redirections suivies, robots.txt),
+  classement de l'état (`WebsiteState`), puis `HtmlInspector` et `PageSpeedClient` (facultatif, jamais bloquant).
+  Problèmes = codes `App\Enums\WebsiteProblem` dans `websites.problems` ; libellés en clair via
+  `Website::problemLabels()` (réutilisés dans les emails : ne citer que des constats réellement détectés).
+  Pages d'exemple des tests : `tests/Fixtures/websites/`.
 - Données OpenStreetMap : mentionner « © contributeurs OpenStreetMap » là où elles sont affichées.
 - Données de démo (`DemoSeeder`) : entreprises fictives, adresses en `.example` uniquement (domaine
   réservé, aucun email ne peut y arriver), jamais chargées en production.

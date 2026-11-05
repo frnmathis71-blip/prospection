@@ -6,6 +6,8 @@ use App\Enums\DataSource;
 use App\Enums\ProspectStatus;
 use App\Filament\Imports\CompanyImporter;
 use App\Filament\Resources\Companies\Pages\ListCompanies;
+use App\Jobs\AnalyzeWebsite;
+use App\Jobs\EnrichCompany;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\SuppressionEntry;
@@ -16,9 +18,27 @@ use Filament\Actions\Imports\Jobs\ImportCsv;
 use Filament\Actions\Imports\Models\Import;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 
 const CSV_COLUMNS = ['name', 'siren', 'naf_code', 'address', 'postal_code', 'city', 'phone', 'website', 'email', 'founded_on', 'headcount_range'];
+
+beforeEach(function () {
+    // Les enrichissements et analyses déclenchés par l'import sont testés à part (aucun appel réseau ici).
+    Queue::fake([EnrichCompany::class, AnalyzeWebsite::class]);
+});
+
+it('enrichit les nouvelles entreprises importées, puis analyse le site d’une entreprise déjà connue', function () {
+    $known = Company::factory()->create(['siren' => '123456789']);
+
+    runImport([
+        csvRow(['name' => 'Nouvelle', 'siren' => '200000009']),
+        csvRow(['name' => 'Connue', 'siren' => '123456789', 'website' => 'https://connue.example']),
+    ]);
+
+    Queue::assertPushed(EnrichCompany::class, 1);
+    Queue::assertPushed(AnalyzeWebsite::class, fn ($job) => $job->company->is($known));
+});
 
 /**
  * Fait passer des lignes CSV par le vrai job d'import Filament (celui qui tourne en tâche de fond).

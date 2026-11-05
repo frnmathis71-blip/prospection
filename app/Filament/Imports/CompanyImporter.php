@@ -4,6 +4,8 @@ namespace App\Filament\Imports;
 
 use App\Enums\ActivityType;
 use App\Enums\DataSource;
+use App\Jobs\AnalyzeWebsite;
+use App\Jobs\EnrichCompany;
 use App\Models\Company;
 use App\Services\ContactRecorder;
 use App\Support\Domain;
@@ -176,16 +178,24 @@ class CompanyImporter extends Importer
 
     protected function afterSave(): void
     {
-        $this->saveWebsite();
+        $websiteAdded = $this->saveWebsite();
         $this->saveContact();
+
+        // M5 : nouvelle entreprise → enrichissement puis analyse du site ;
+        // entreprise connue dont le site vient d'être ajouté → analyse de ce site.
+        if ($this->record->wasRecentlyCreated) {
+            EnrichCompany::dispatch($this->record);
+        } elseif ($websiteAdded) {
+            AnalyzeWebsite::dispatch($this->record);
+        }
     }
 
-    private function saveWebsite(): void
+    private function saveWebsite(): bool
     {
         $url = $this->data['website'] ?? null;
 
         if (blank($url) || $this->record->website()->exists()) {
-            return;
+            return false;
         }
 
         if (! preg_match('#^https?://#i', $url)) {
@@ -193,6 +203,8 @@ class CompanyImporter extends Importer
         }
 
         $this->record->website()->create(['url' => $url]);
+
+        return true;
     }
 
     private function saveContact(): void

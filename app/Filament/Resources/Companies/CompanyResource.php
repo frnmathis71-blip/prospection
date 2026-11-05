@@ -9,8 +9,11 @@ use App\Filament\Resources\Companies\Pages\CreateCompany;
 use App\Filament\Resources\Companies\Pages\EditCompany;
 use App\Filament\Resources\Companies\Pages\ListCompanies;
 use App\Filament\Resources\Companies\Pages\ViewCompany;
+use App\Jobs\AnalyzeWebsite;
 use App\Models\Company;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
@@ -20,6 +23,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -30,6 +34,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\HtmlString;
 
 class CompanyResource extends Resource
@@ -123,7 +128,13 @@ class CompanyResource extends Resource
                 Section::make('Site web')
                     ->columns(3)
                     ->schema([
-                        TextEntry::make('website.state')->label('État')->badge()->placeholder('Non analysé'),
+                        TextEntry::make('website.state')
+                            ->label('État')
+                            ->badge()
+                            ->placeholder('Non analysé')
+                            ->helperText(fn (Company $record) => $record->website?->analyzed_at
+                                ? 'Analysé le '.$record->website->analyzed_at->timezone(config('app.timezone'))->format('d/m/Y à H:i')
+                                : null),
                         TextEntry::make('website.url')
                             ->label('Lien du site')
                             ->url(fn (Company $record) => $record->website?->url, shouldOpenInNewTab: true)
@@ -132,8 +143,47 @@ class CompanyResource extends Resource
                             ->color('primary')
                             ->copyable()
                             ->placeholder('Aucun site'),
-                        TextEntry::make('website.pagespeed')->label('PageSpeed mobile')->placeholder('—'),
-                        TextEntry::make('website.problems')->label('Problèmes détectés')->listWithLineBreaks()->bulleted()->placeholder('Aucun')->columnSpanFull(),
+                        TextEntry::make('website.pagespeed')
+                            ->label('PageSpeed mobile')
+                            ->formatStateUsing(fn (?int $state) => $state === null ? null : "{$state}/100")
+                            ->color(fn (?int $state) => match (true) {
+                                $state === null => null,
+                                $state < 50 => 'danger',
+                                $state < 90 => 'warning',
+                                default => 'success',
+                            })
+                            ->placeholder('—'),
+                        TextEntry::make('website.final_url')
+                            ->label('Adresse finale (après redirections)')
+                            ->visible(fn (Company $record) => filled($record->website?->final_url) && $record->website->final_url !== $record->website->url)
+                            ->columnSpan(2),
+                        TextEntry::make('website.https')
+                            ->label('HTTPS')
+                            ->formatStateUsing(fn (?bool $state) => $state ? 'Oui' : 'Non')
+                            ->color(fn (?bool $state) => $state ? 'success' : 'danger')
+                            ->placeholder('—'),
+                        TextEntry::make('website.responsive')
+                            ->label('Adapté au mobile')
+                            ->formatStateUsing(fn (?bool $state) => $state ? 'Oui' : 'Non')
+                            ->color(fn (?bool $state) => $state ? 'success' : 'danger')
+                            ->placeholder('—'),
+                        TextEntry::make('website.technologies')
+                            ->label('Technologies')
+                            ->state(fn (Company $record) => collect($record->website?->technologies ?? [])
+                                ->map(fn (?string $version, string $name) => trim("{$name} {$version}"))
+                                ->implode(', ') ?: null)
+                            ->placeholder('—'),
+                        TextEntry::make('website.analysis_note')
+                            ->label('Remarque de l’analyse')
+                            ->visible(fn (Company $record) => filled($record->website?->analysis_note))
+                            ->columnSpanFull(),
+                        TextEntry::make('website.problems')
+                            ->label('Problèmes détectés')
+                            ->state(fn (Company $record) => $record->website?->problemLabels() ?: null)
+                            ->listWithLineBreaks()
+                            ->bulleted()
+                            ->placeholder('Aucun')
+                            ->columnSpanFull(),
                         TextEntry::make('osm_signals')
                             ->label('Signaux OpenStreetMap')
                             ->state(fn (Company $record) => self::osmSummary($record))
@@ -251,7 +301,42 @@ class CompanyResource extends Resource
             ->recordActions([
                 ViewAction::make()->iconButton()->tooltip('Voir'),
                 EditAction::make()->iconButton()->tooltip('Modifier'),
+            ])
+            ->toolbarActions([
+                BulkAction::make('analyze')
+                    ->label('Analyser les sites')
+                    ->icon(Heroicon::OutlinedMagnifyingGlassCircle)
+                    ->deselectRecordsAfterCompletion()
+                    ->action(function (Collection $records) {
+                        $records->each(fn (Company $company) => AnalyzeWebsite::dispatch($company));
+
+                        Notification::make()
+                            ->title($records->count().' analyse(s) mise(s) en file')
+                            ->body('Résultats dans la colonne « Site » au fur et à mesure (worker requis).')
+                            ->success()
+                            ->send();
+                    }),
             ]);
+    }
+
+    /**
+     * Analyse du site d'une entreprise, en tâche de fond (fiche entreprise).
+     */
+    public static function analyzeAction(): Action
+    {
+        return Action::make('analyzeWebsite')
+            ->label('Analyser le site')
+            ->icon(Heroicon::OutlinedMagnifyingGlassCircle)
+            ->color('gray')
+            ->action(function (Company $record) {
+                AnalyzeWebsite::dispatch($record);
+
+                Notification::make()
+                    ->title('Analyse du site mise en file')
+                    ->body('Rechargez la fiche dans quelques instants (worker requis).')
+                    ->success()
+                    ->send();
+            });
     }
 
     /**

@@ -47,6 +47,22 @@ return [
         'timeout' => 8,
     ],
 
+    // Analyse des sites (M5) : une visite de la page d'accueil, robots.txt respecté.
+    'website_analysis' => [
+        'timeout' => 15,
+        'per_minute' => (int) env('PROSPECTION_ANALYSES_PER_MINUTE', 20),
+    ],
+
+    // Google PageSpeed Insights (gratuit). Une clé gratuite augmente le quota ; sans clé, le
+    // quota partagé est vite atteint et le score reste alors vide (l'analyse continue).
+    'pagespeed' => [
+        'enabled' => (bool) env('PAGESPEED_ENABLED', true),
+        'url' => 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed',
+        'key' => env('PAGESPEED_API_KEY'),
+        'timeout' => 90,
+        'slow_below' => 50, // score mobile en dessous duquel « le site est lent sur mobile »
+    ],
+
     // Enrichissements par minute (OpenStreetMap + devinette), pour un usage raisonnable.
     'enrichments_per_minute' => (int) env('PROSPECTION_ENRICHMENTS_PER_MINUTE', 20),
 

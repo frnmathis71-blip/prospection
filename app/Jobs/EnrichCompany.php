@@ -82,6 +82,9 @@ class EnrichCompany implements ShouldQueue
         }
 
         $company->update(['enriched_at' => now()]);
+
+        // M5 : le site (trouvé ou non) est ensuite analysé.
+        AnalyzeWebsite::dispatch($company);
     }
 
     /**

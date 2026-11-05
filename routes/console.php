@@ -1,7 +1,9 @@
 <?php
 
+use App\Jobs\AnalyzeWebsite;
 use App\Jobs\QueueHealthCheck;
 use App\Jobs\RunCompanySearch;
+use App\Models\Company;
 use App\Models\Search;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -23,6 +25,21 @@ Artisan::command('app:run-recurring-searches {recurrence : weekly ou monthly}', 
 
     $this->info($searches->count().' recherche(s) « '.$recurrence.' » mise(s) en file.');
 })->purpose('Relance les recherches récurrentes (planifié)');
+
+Artisan::command('app:analyze-websites {--all : Réanalyser aussi les sites déjà analysés}', function () {
+    $query = Company::query()
+        ->when(! $this->option('all'), fn ($query) => $query->where(fn ($query) => $query
+            ->doesntHave('website')
+            ->orWhereHas('website', fn ($query) => $query->whereNull('analyzed_at'))));
+
+    $count = 0;
+    $query->select('id')->chunkById(500, function ($companies) use (&$count) {
+        $companies->each(fn (Company $company) => AnalyzeWebsite::dispatch($company));
+        $count += $companies->count();
+    });
+
+    $this->info("{$count} analyse(s) de site mise(s) en file (file « enrichment », débit limité).");
+})->purpose('Analyse les sites des entreprises (M5)');
 
 // Recherches récurrentes (mission M4) : « Plombiers 71 — chaque lundi ».
 Schedule::command('app:run-recurring-searches weekly')->weeklyOn(1, '07:00')->timezone('Europe/Paris');

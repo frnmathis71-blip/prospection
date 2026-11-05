@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\WebsiteProblem;
 use App\Enums\WebsiteState;
 use App\Models\Company;
 use App\Models\Website;
@@ -39,11 +40,14 @@ class WebsiteFactory extends Factory
             'responsive' => false,
             'pagespeed' => fake()->numberBetween(10, 45),
             'copyright_year' => fake()->numberBetween(2008, 2016),
-            'technologies' => ['jQuery 1.11', 'WordPress 4.9'],
+            'technologies' => ['jQuery' => '1.11.3', 'WordPress' => '4.9.8'],
             'problems' => [
-                "Le site n'est pas sécurisé (pas de HTTPS)",
-                "Le site s'affiche mal sur mobile",
-                'Le site semble ne plus être mis à jour',
+                WebsiteProblem::NoHttps->value,
+                WebsiteProblem::NotResponsive->value,
+                WebsiteProblem::SlowMobile->value,
+                WebsiteProblem::OldCopyright->value,
+                WebsiteProblem::OutdatedCms->value,
+                WebsiteProblem::OldJquery->value,
             ],
         ]);
     }

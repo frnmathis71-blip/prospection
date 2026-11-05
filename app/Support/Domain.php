@@ -21,6 +21,37 @@ class Domain
         'wixsite.com', 'jimdofree.com', 'jimdo.com', 'e-monsite.com', 'over-blog.com', 'webnode.fr',
     ];
 
+    /** Réseaux sociaux : une entreprise qui n'a que ça n'a pas de site (état « Réseau social seul »). */
+    public const SOCIAL_HOSTS = [
+        'facebook.com', 'fb.com', 'fb.me', 'instagram.com', 'linkedin.com', 'twitter.com', 'x.com', 'tiktok.com',
+        'youtube.com', 'pinterest.com', 'pinterest.fr',
+    ];
+
+    /**
+     * Annuaires, fiches Google et mini-sites gratuits (état « Mini-site d'annuaire ») :
+     * l'entreprise n'a pas de vrai site à elle.
+     */
+    public const DIRECTORY_HOSTS = [
+        'pagesjaunes.fr', 'mappy.com', 'tripadvisor.fr', 'tripadvisor.com', 'yelp.fr', 'yelp.com', 'linktr.ee',
+        'google.com', 'goo.gl', 'g.page', 'business.site', 'sites.google.com', 'solocal.com',
+        'wixsite.com', 'jimdofree.com', 'jimdosite.com', 'e-monsite.com', 'over-blog.com', 'webnode.fr',
+        'webnode.page', 'pagesperso-orange.fr', 'monsite-orange.fr', 'free.fr', 'blogspot.com', 'wordpress.com',
+    ];
+
+    /**
+     * « social », « directory » (annuaire ou mini-site gratuit) ou null pour un site propre.
+     */
+    public static function kind(string $host): ?string
+    {
+        $matches = fn (array $list) => collect($list)->contains(fn (string $shared) => $host === $shared || str_ends_with($host, '.'.$shared));
+
+        return match (true) {
+            $matches(self::SOCIAL_HOSTS) => 'social',
+            $matches(self::DIRECTORY_HOSTS) => 'directory',
+            default => null,
+        };
+    }
+
     /** Messageries grand public : une adresse chez elles est personnelle (cf. cahier des charges). */
     public const PERSONAL_MAILBOXES = [
         'gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.fr', 'outlook.com', 'outlook.fr', 'live.com',

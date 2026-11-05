@@ -13,6 +13,7 @@ class ViewCompany extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            CompanyResource::analyzeAction(),
             EditAction::make(),
         ];
     }

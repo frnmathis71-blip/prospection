@@ -2,6 +2,7 @@
 
 use App\Enums\DataSource;
 use App\Enums\ProspectStatus;
+use App\Jobs\AnalyzeWebsite;
 use App\Jobs\EnrichCompany;
 use App\Jobs\RunCompanySearch;
 use App\Models\Company;
@@ -16,12 +17,14 @@ use App\Services\SearchCriteria;
 use Illuminate\Http\Client\Request;
 use Illuminate\Queue\Middleware\RateLimited;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Sleep;
 
 const OVERPASS_URL = 'overpass-api.de/*';
 
 beforeEach(function () {
     Sleep::fake();
+    Queue::fake([AnalyzeWebsite::class]); // l'analyse du site (M5) est testée à part
 
     // DNS simulé : seuls les domaines listés existent.
     $this->dns = new class extends DnsResolver
