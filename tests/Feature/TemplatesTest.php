@@ -159,10 +159,42 @@ describe('mentions obligatoires', function () {
         $company = prospect();
 
         $html = renderFor($template, $company, contactOf($company))->html;
+        preg_match_all('/<img\b[^>]*\bsrc="([^"]*)"/i', $html, $images);
 
-        expect($html)->not->toMatch('/<img\b/i')
-            ->not->toContain('background-image')
+        // Une seule image : le bandeau Codenyr, intégré à l'email (cid), jamais chargé depuis un serveur.
+        expect($images[1])->toBe(['cid:'.TemplateRenderer::HEADER_CID])
+            ->and($html)->not->toContain('background-image')
             ->not->toMatch('/[?&](uid|contact|email)=/');
+    });
+
+    it('intègre le bandeau aux couleurs de codenyr.fr dans l’email, sans chargement distant', function () {
+        $company = prospect();
+        $email = renderFor(Template::factory()->create(['body' => 'Bonjour']), $company, contactOf($company));
+
+        expect($email->inlineImages)->toBe([TemplateRenderer::HEADER_CID => resource_path('images/email-header.jpg')])
+            ->and($email->html)->toContain('alt="Codenyr — Votre savoir-faire. Un site à sa hauteur."');
+
+        $symfony = (new ProspectMail($email))->to('contact@plomberie-martin.fr')->from('camille@envoi-dedie.example');
+        $sent = Mail::mailer('array')->send($symfony)->getSymfonySentMessage()->getOriginalMessage();
+        $parts = collect($sent->getAttachments());
+
+        expect($parts)->toHaveCount(1)
+            ->and($parts->first()->getContentId())->toBe(TemplateRenderer::HEADER_CID)
+            ->and($parts->first()->getMediaType().'/'.$parts->first()->getMediaSubtype())->toBe('image/jpeg')
+            ->and($parts->first()->getPreparedHeaders()->getHeaderBody('Content-Disposition'))->toBe('inline');
+
+        // Aperçu Filament : image en data URI (le « cid » ne s'affiche que dans une messagerie).
+        expect(app(TemplateRenderer::class)->render(Template::first(), $company, contactOf($company, 'apercu@plomberie-martin.fr'), preview: true)->html)
+            ->toContain('src="data:image/jpeg;base64,');
+    });
+
+    it('peut se passer du bandeau (EMAIL_HEADER_IMAGE=false)', function () {
+        config(['prospection.emails.header_image' => null]);
+        $company = prospect();
+
+        $email = renderFor(Template::factory()->create(['body' => 'Bonjour']), $company, contactOf($company));
+
+        expect($email->html)->not->toMatch('/<img\b/i')->and($email->inlineImages)->toBe([]);
     });
 
     it('produit une version texte brut avec le lien du bouton et la désinscription', function () {

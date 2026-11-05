@@ -84,7 +84,9 @@ cahier des charges, section « Interdits — à ne jamais faire », et s'appliqu
   `RenderedEmail` (objet, HTML, texte brut, `blocking`, `warnings`). Variables `TemplateRenderer::VARIABLES`,
   valeur de secours `{variable|secours}` ; variable vide sans secours, variable inconnue ou identité de l'expéditeur
   incomplète (`config('prospection.sender')`, .env `SENDER_*`) = envoi bloqué (`canBeSent()`). Bouton UTM, mention
-  d'information, confidentialité et désinscription ajoutés automatiquement ; aucune image (pixel) possible.
+  d'information, confidentialité et désinscription ajoutés automatiquement. Seule image : le bandeau
+  esources/images/email-header.jpg, intégré à l'email (cid, RenderedEmail::$inlineImages), jamais chargé à distance ;
+  les images du corps sont converties en liens (aucun pixel possible).
   Mailable `App\Mail\ProspectMail` (en-têtes List-Unsubscribe). Désinscription : route publique signée
   `unsubscribe` (`/desinscription?e=…`, GET et POST One-Click, sans CSRF) → liste d'opposition. L'aperçu Filament
   utilise un lien NON signé (`preview: true`) pour ne jamais désinscrire un prospect par erreur. « M'envoyer un

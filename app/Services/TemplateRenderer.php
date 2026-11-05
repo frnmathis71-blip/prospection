@@ -65,8 +65,19 @@ class TemplateRenderer
         $bodyText = self::markdownToText($textBody);
         $wordCount = str_word_count(Str::ascii($bodyText));
 
+        // Bandeau aux couleurs de codenyr.fr, intégré à l'email (pièce jointe « cid ») : aucun
+        // chargement distant, donc aucun suivi d'ouverture possible. Aperçu Filament : image en data URI.
+        $header = self::headerImage();
+        $inlineImages = $header ? [self::HEADER_CID => $header] : [];
+        $headerSrc = match (true) {
+            $header === null => null,
+            $preview => 'data:image/jpeg;base64,'.base64_encode((string) file_get_contents($header)),
+            default => 'cid:'.self::HEADER_CID,
+        };
+
         $html = view('emails.prospect', [
             'subject' => $subject,
+            'headerSrc' => $headerSrc,
             'bodyHtml' => (string) Str::markdown($markdownBody, ['html_input' => 'escape', 'allow_unsafe_links' => false]),
             'ctaUrl' => $ctaUrl,
             'ctaLabel' => $ctaLabel,
@@ -84,7 +95,20 @@ class TemplateRenderer
             wordCount: $wordCount,
             blocking: array_values(array_unique($blocking)),
             warnings: $this->warnings($wordCount, $markdown, $contact),
+            inlineImages: $inlineImages,
         );
+    }
+
+    public const HEADER_CID = 'codenyr-header@codenyr';
+
+    /**
+     * Chemin du bandeau d'en-tête, ou null s'il est désactivé ou absent.
+     */
+    public static function headerImage(): ?string
+    {
+        $path = config('prospection.emails.header_image');
+
+        return filled($path) && is_file($path) ? $path : null;
     }
 
     /**

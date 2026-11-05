@@ -91,6 +91,8 @@ return [
         // Bouton unique de l'email : lien vers codenyr.fr avec paramètres UTM (pas de suivi individuel).
         'cta_url' => env('EMAIL_CTA_URL', 'https://codenyr.fr'),
         'cta_label' => 'Voir mes réalisations',
+        // Bandeau d'en-tête aux couleurs de codenyr.fr, intégré à l'email (EMAIL_HEADER_IMAGE=false pour le retirer).
+        'header_image' => env('EMAIL_HEADER_IMAGE', true) ? resource_path('images/email-header.jpg') : null,
         'utm_source' => 'prospection',
         'utm_medium' => 'email',
         // Longueur conseillée du corps (cahier des charges : 80 à 150 mots).

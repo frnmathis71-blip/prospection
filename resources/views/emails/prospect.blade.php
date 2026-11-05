@@ -6,12 +6,21 @@
     <meta name="color-scheme" content="light">
     <title>{{ $subject }}</title>
 </head>
-{{-- Email de prospection (M8) : texte simple, un seul bouton, aucune image ni pixel de suivi. --}}
+{{-- Email de prospection (M8) : texte simple, un seul bouton, un bandeau intégré, aucun pixel de suivi. --}}
 <body style="margin:0;padding:0;background:#ffffff;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;">
         <tr>
             <td align="left" style="padding:16px;">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
+                    @if ($headerSrc)
+                        {{-- Bandeau aux couleurs de codenyr.fr, intégré à l'email (pas de chargement distant). --}}
+                        <tr>
+                            <td style="padding:0 0 20px;">
+                                <img src="{{ $headerSrc }}" width="600" height="150" alt="Codenyr — Votre savoir-faire. Un site à sa hauteur."
+                                     style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:8px;background:#101d3d;color:#f8fafc;font-family:Arial,Helvetica,sans-serif;font-size:16px;">
+                            </td>
+                        </tr>
+                    @endif
                     <tr>
                         <td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#1f2937;">
                             {!! $bodyHtml !!}

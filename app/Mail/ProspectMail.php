@@ -9,6 +9,9 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Headers;
 use Illuminate\Queue\SerializesModels;
+use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\Part\DataPart;
+use Symfony\Component\Mime\Part\File;
 
 /**
  * Email de prospection déjà rendu (M8) : HTML + texte brut, en-têtes de désinscription en un
@@ -44,6 +47,15 @@ class ProspectMail extends Mailable
 
     public function content(): Content
     {
+        // Bandeau intégré à l'email (« cid »), pas de chargement distant : aucun suivi d'ouverture.
+        $this->withSymfonyMessage(function (Email $message) {
+            $existing = array_map(fn ($part) => $part->getContentId(), $message->getAttachments());
+
+            foreach (array_diff_key($this->email->inlineImages, array_flip($existing)) as $cid => $path) {
+                $message->addPart((new DataPart(new File($path), basename($path), 'image/jpeg'))->asInline()->setContentId($cid));
+            }
+        });
+
         return new Content(htmlString: $this->email->html, text: 'emails.prospect-text', with: ['text' => $this->email->text]);
     }
 }

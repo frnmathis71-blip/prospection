@@ -11,6 +11,7 @@ final class RenderedEmail
     /**
      * @param  list<string>  $blocking  raisons qui interdisent l'envoi
      * @param  list<string>  $warnings  conseils de rédaction (longueur, liens…)
+     * @param  array<string, string>  $inlineImages  images intégrées à l'email : Content-ID => chemin du fichier
      */
     public function __construct(
         public readonly string $subject,
@@ -21,6 +22,7 @@ final class RenderedEmail
         public readonly int $wordCount,
         public readonly array $blocking = [],
         public readonly array $warnings = [],
+        public readonly array $inlineImages = [],
     ) {}
 
     public function canBeSent(): bool
