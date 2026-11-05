@@ -22,6 +22,7 @@ use App\Services\PersonalDataExporter;
 use App\Services\ProductionCheck;
 use App\Services\ProspectPurger;
 use App\Support\BusinessCalendar;
+use App\Support\Periodic;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Storage;
@@ -112,7 +113,7 @@ Artisan::command('app:read-inbox', function () {
 Schedule::job(new ReadInbox)->everyFiveMinutes()->when(fn () => app(Mailbox::class)->isConfigured());
 
 // Coupe-circuit (M11) : contrôle horaire des rebonds et désinscriptions sur 7 jours.
-Schedule::call(fn () => app(CircuitBreaker::class)->check())->hourly()->name('coupe-circuit');
+Schedule::call(fn () => app(CircuitBreaker::class)->check())->everyMinute()->when(Periodic::hourly('coupe-circuit'))->name('coupe-circuit');
 
 Artisan::command('app:purge-prospects {--dry-run : Afficher le nombre sans rien supprimer}', function (ProspectPurger $purger) {
     if ($this->option('dry-run')) {
@@ -149,13 +150,15 @@ Artisan::command('app:production-check', function (ProductionCheck $check) {
 })->purpose('Vérifie la configuration avant la mise en production (M12)');
 
 // RGPD (M12) : purge des prospects sans réponse depuis plus de 3 ans, chaque nuit.
-Schedule::command('app:purge-prospects')->dailyAt('03:30')->timezone('Europe/Paris');
+Schedule::command('app:purge-prospects')->everyMinute()->when(Periodic::daily('purge', '03:30'));
 
 // Sauvegardes (M12) : base de données chaque nuit, nettoyage des anciennes, contrôle de fraîcheur.
-Schedule::command('backup:clean')->dailyAt('01:00')->timezone('Europe/Paris');
-Schedule::command('backup:run --only-db')->dailyAt('01:30')->timezone('Europe/Paris');
-Schedule::command('backup:monitor')->dailyAt('09:00')->timezone('Europe/Paris');
+Schedule::command('backup:clean')->everyMinute()->when(Periodic::daily('backup-clean', '01:00'));
+Schedule::command('backup:run --only-db')->everyMinute()->when(Periodic::daily('backup-run', '01:30'));
+Schedule::command('backup:monitor')->everyMinute()->when(Periodic::daily('backup-monitor', '09:00'));
 
 // Recherches récurrentes (mission M4) : « Plombiers 71 — chaque lundi ».
-Schedule::command('app:run-recurring-searches weekly')->weeklyOn(1, '07:00')->timezone('Europe/Paris');
-Schedule::command('app:run-recurring-searches monthly')->monthlyOn(1, '07:00')->timezone('Europe/Paris');
+// Tâches à heure fixe (heure de Paris) : « une fois par période », au premier passage après l'heure
+// prévue (App\Support\Periodic), pour qu'aucune ne saute sur un hébergement mutualisé.
+Schedule::command('app:run-recurring-searches weekly')->everyMinute()->when(Periodic::weekly('searches-weekly', 1, '07:00'));
+Schedule::command('app:run-recurring-searches monthly')->everyMinute()->when(Periodic::monthly('searches-monthly', 1, '07:00'));

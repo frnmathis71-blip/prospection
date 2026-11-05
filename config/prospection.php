@@ -12,6 +12,10 @@
 
 return [
 
+    // Hébergement : « vps » (Redis, Horizon supervisé, cron chaque minute) ou « shared » (mutualisé OVH :
+    // file et cache en base, une tâche planifiée par heure qui lance app:shared-hosting-cron).
+    'hosting' => env('HOSTING_MODE', 'vps'),
+
     // Identifie honnêtement l'outil auprès des services et des sites visités.
     'user_agent' => env('PROSPECTION_USER_AGENT', 'CodenyrProspection/1.0 (+https://codenyr.fr)'),
 

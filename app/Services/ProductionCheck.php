@@ -29,7 +29,12 @@ class ProductionCheck
         $check(str_starts_with((string) config('app.url'), 'https://'), 'APP_URL doit commencer par https:// (liens de désinscription des emails).');
         $check(TwoFactor::isRequired(), 'La double authentification doit être obligatoire.');
         $check(! in_array(config('database.default'), ['sqlite'], true), 'Base SQLite : utiliser MySQL ou PostgreSQL en production.');
-        $check(config('queue.default') === 'redis', 'QUEUE_CONNECTION doit valoir « redis » (Horizon).');
+        if (config('prospection.hosting') === 'shared') {
+            $check(config('queue.default') === 'database', 'Mutualisé : QUEUE_CONNECTION doit valoir « database ».');
+            $check(in_array(config('cache.default'), ['database', 'file'], true), 'Mutualisé : CACHE_STORE doit valoir « database » (pas de Redis).');
+        } else {
+            $check(config('queue.default') === 'redis', 'QUEUE_CONNECTION doit valoir « redis » (Horizon), ou HOSTING_MODE=shared sur un mutualisé.');
+        }
         $check(! in_array(config('mail.default'), ['log', 'array'], true), 'MAIL_MAILER ne doit pas être « log » : configurer le SMTP du domaine d’envoi dédié.');
         $check(! str_ends_with((string) config('mail.from.address'), '.example'), 'MAIL_FROM_ADDRESS : adresse du domaine d’envoi dédié.');
         $check(! str_ends_with((string) config('mail.from.address'), '@codenyr.fr'), 'MAIL_FROM_ADDRESS ne doit pas utiliser codenyr.fr (domaine d’envoi dédié obligatoire).');

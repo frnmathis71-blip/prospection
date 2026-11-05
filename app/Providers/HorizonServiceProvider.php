@@ -37,7 +37,9 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
      */
     protected function gate(): void
     {
+        // Mutualisé : pas de Redis, donc pas de Horizon (état de la file sur le tableau de bord).
         Gate::define('viewHorizon', fn (?User $user = null): bool => $user !== null
+            && config('prospection.hosting') !== 'shared'
             && (! TwoFactor::isRequired() || $user->hasAppAuthenticationEnabled()));
     }
 }

@@ -58,6 +58,8 @@ php artisan make:filament-user
   désinscriptions sur 7 jours), taux de réponse par template / secteur / zone. Coupe-circuit : au-delà de 3 % de
   rebonds ou 2 % de désinscriptions, toutes les campagnes passent en pause ; « Réarmer le coupe-circuit » dans
   Campagnes, après vérification.
+- Hébergement mutualisé OVH : [`docs/deploiement-mutualise.md`](docs/deploiement-mutualise.md) (`HOSTING_MODE=shared`,
+  tâche planifiée horaire sur `cron-ovh.php`).
 - Mise en production : guide complet dans [`docs/deploiement.md`](docs/deploiement.md) (VPS, HTTPS, Horizon
   supervisé, cron, sauvegardes, restauration, campagne pilote). Avant de lancer : `php artisan app:production-check`.
 - RGPD : menu « Registre RGPD » (fiche du traitement, export des données d'une personne) ; purge automatique des

@@ -120,6 +120,11 @@ cahier des charges, section « Interdits — à ne jamais faire », et s'appliqu
   `app:export-person`. Sauvegardes spatie/laravel-backup (base seule, chiffrée par `BACKUP_ARCHIVE_PASSWORD`, disques
   `BACKUP_DISKS`). `app:production-check` liste ce qui manque avant la production. Déploiement : `docs/deploiement.md`
   et `deploy/` (nginx, Supervisor/Horizon, crontab, deploy.sh).
+- Hébergement mutualisé (OVH) : `HOSTING_MODE=shared`, file et cache en base, Horizon fermé. Une tâche OVH horaire
+  appelle `cron-ovh.php` → `app:shared-hosting-cron` (55 min : `schedule:run` chaque minute puis `queue:work
+  --stop-when-empty --max-time=…`, chaque étape dans son propre processus, verrou anti-doublon). Toute tâche planifiée
+  à heure fixe passe par `App\Support\Periodic` (`->everyMinute()->when(Periodic::daily(...))`) : une fois par
+  période, au premier passage après l'heure prévue. Guide : `docs/deploiement-mutualise.md`.
 - Données OpenStreetMap : mentionner « © contributeurs OpenStreetMap » là où elles sont affichées.
 - Données de démo (`DemoSeeder`) : entreprises fictives, adresses en `.example` uniquement (domaine
   réservé, aucun email ne peut y arriver), jamais chargées en production.
