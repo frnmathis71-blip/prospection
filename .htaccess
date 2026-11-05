@@ -1,0 +1,21 @@
+# Filet de sécurité pour l'hébergement mutualisé (Apache) : si le dossier racine du site pointe par
+# erreur sur le projet au lieu de « public/ », AUCUN fichier du projet (.env, .git, code, sauvegardes)
+# n'est servi : tout est renvoyé vers public/, seul dossier prévu pour le web.
+# Le bon réglage reste : Multisite OVH → dossier racine « prospection/public ».
+
+Options -Indexes
+
+# Jamais de fichiers cachés (.env, .git…), même en cas de mauvaise configuration.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Sans mod_rewrite, on refuse tout plutôt que d'exposer le projet.
+<IfModule !mod_rewrite.c>
+    Require all denied
+</IfModule>

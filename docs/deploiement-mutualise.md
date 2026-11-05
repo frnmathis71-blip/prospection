@@ -105,3 +105,9 @@ La boucle en cours finit avec l'ancien code ; la suivante (heure suivante) prend
 ## 7. Campagne pilote et RGPD
 
 Identiques au VPS : sections 8 et 9 de [`deploiement.md`](deploiement.md).
+
+## Sécurité : dossier racine
+
+Le dossier racine du Multisite doit être **`prospection/public`**, jamais `prospection`. Vérification :
+`https://prospection.codenyr.fr/.env` et `https://prospection.codenyr.fr/.git/HEAD` doivent renvoyer une erreur
+(403 ou 404), jamais un contenu. Un `.htaccess` à la racine du projet sert de filet de sécurité en cas d'erreur.
