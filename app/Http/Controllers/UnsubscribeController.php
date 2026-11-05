@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ActivityType;
+use App\Enums\EmailStatus;
 use App\Enums\ProspectStatus;
 use App\Enums\SuppressionReason;
 use App\Models\Contact;
+use App\Models\Email;
 use App\Models\SuppressionEntry;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -25,6 +27,12 @@ class UnsubscribeController extends Controller
         if (! SuppressionEntry::query()->where('email', $email)->exists()) {
             SuppressionEntry::create(['email' => $email, 'reason' => SuppressionReason::Unsubscribed]);
         }
+
+        // M10 : les emails encore en file (relances comprises) sont annulés.
+        Email::query()
+            ->where('status', EmailStatus::Queued)
+            ->whereHas('contact', fn ($query) => $query->where('email', $email))
+            ->update(['status' => EmailStatus::Cancelled, 'note' => 'Désinscription : séquence arrêtée.']);
 
         Contact::query()->where('email', $email)->with('company')->get()->each(function (Contact $contact) {
             $company = $contact->company;

@@ -114,6 +114,21 @@ return [
         'daily_cap' => (int) env('SENDING_DAILY_CAP', 10),
     ],
 
+    /*
+    | Lecture de la boîte d'envoi (M10) : réponses, réponses automatiques et rebonds.
+    | Lecture seule : les messages ne sont ni supprimés ni marqués comme lus.
+    */
+    'imap' => [
+        'host' => env('IMAP_HOST'),
+        'port' => (int) env('IMAP_PORT', 993),
+        'encryption' => env('IMAP_ENCRYPTION', 'ssl'),
+        'validate_cert' => (bool) env('IMAP_VALIDATE_CERT', true),
+        'username' => env('IMAP_USERNAME'),
+        'password' => env('IMAP_PASSWORD'),
+        'folder' => env('IMAP_FOLDER', 'INBOX'),
+        'lookback_days' => 3, // messages relus à chaque passage (les doublons sont ignorés)
+    ],
+
     // Enrichissements par minute (OpenStreetMap + devinette), pour un usage raisonnable.
     'enrichments_per_minute' => (int) env('PROSPECTION_ENRICHMENTS_PER_MINUTE', 20),
 

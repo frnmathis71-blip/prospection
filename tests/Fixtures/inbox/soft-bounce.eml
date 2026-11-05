@@ -1,0 +1,28 @@
+From: postmaster@smtp.envoi-dedie.example
+To: camille@envoi-dedie.example
+Subject: Delivery Status Notification (Delay)
+Date: Mon, 9 Nov 2026 08:05:00 +0100
+Message-ID: <rebond-temp-{{N}}@smtp.envoi-dedie.example>
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=delivery-status; boundary="FRONTIERE"
+
+--FRONTIERE
+Content-Type: text/plain; charset=us-ascii
+
+Delivery to the following recipient has been delayed: contact@entreprise-1.fr
+Mailbox full.
+
+--FRONTIERE
+Content-Type: message/delivery-status
+
+Final-Recipient: rfc822; contact@entreprise-1.fr
+Action: delayed
+Status: 4.2.2
+Diagnostic-Code: smtp; 452 4.2.2 Mailbox full
+
+--FRONTIERE
+Content-Type: text/rfc822-headers
+
+Message-ID: <{{MESSAGE_ID}}>
+
+--FRONTIERE--

@@ -29,6 +29,25 @@ class BusinessCalendar
     }
 
     /**
+     * Date (heure de Paris, début de journée) située $days jours ouvrés après celle de l'instant donné.
+     * « J+4 » d'un email parti le lundi 9 novembre 2026 = lundi 16 (le 11 novembre est férié).
+     */
+    public static function addBusinessDays(CarbonInterface $moment, int $days): CarbonImmutable
+    {
+        $day = self::local($moment)->startOfDay();
+
+        while ($days > 0) {
+            $day = $day->addDay();
+
+            if (self::isBusinessDay($day)) {
+                $days--;
+            }
+        }
+
+        return $day;
+    }
+
+    /**
      * Vrai si l'instant est un jour ouvré, dans un des créneaux d'envoi (début inclus, fin exclue).
      */
     public static function isSendingTime(?CarbonInterface $moment = null): bool

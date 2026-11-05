@@ -50,6 +50,10 @@ php artisan make:filament-user
   explicite). Les emails partent ensuite un par un, jours ouvrés, 8 h-11 h et 14 h-17 h, 2 à 6 minutes d'écart :
   le worker ET le planificateur doivent tourner (`php artisan schedule:work` en local). Plafond global du domaine :
   `SENDING_DAILY_CAP`. Séquences J0 / J+4 / J+12 de départ : créées par `TemplateSeeder`.
+- Relances, réponses, rebonds : les relances J+4 / J+12 (jours ouvrés) partent seules. La boîte d'envoi est lue
+  toutes les 5 minutes (IMAP, lecture seule) dès que `IMAP_HOST`, `IMAP_USERNAME` et `IMAP_PASSWORD` sont
+  renseignés : une réponse arrête la séquence et s'affiche dans la cloche ; les absences sont ignorées ; un rebond
+  dur ajoute l'adresse à la liste d'opposition. Lecture manuelle : `php artisan app:read-inbox`.
 - Tableau de bord : état de la file (tâches en attente, worker arrêté, échecs) et suivi des imports
   (en attente, en cours avec progression, terminé, rapport d'erreurs), mis à jour toutes les 5 secondes.
 

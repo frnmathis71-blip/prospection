@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Email de prospection prévu ou envoyé (table emails).
  */
-#[Fillable(['contact_id', 'company_id', 'campaign_id', 'sequence_step_id', 'template_id', 'subject', 'status', 'sent_at', 'message_id', 'note'])]
+#[Fillable(['contact_id', 'company_id', 'campaign_id', 'sequence_step_id', 'template_id', 'subject', 'status', 'sent_at', 'message_id', 'note', 'retries'])]
 class Email extends Model
 {
     /** @use HasFactory<EmailFactory> */

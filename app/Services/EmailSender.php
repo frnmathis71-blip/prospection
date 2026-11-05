@@ -29,7 +29,10 @@ class EmailSender
 {
     public const NEXT_SEND_KEY = 'sending:next-at';
 
-    public function __construct(private readonly TemplateRenderer $renderer) {}
+    public function __construct(
+        private readonly TemplateRenderer $renderer,
+        private readonly FollowUpScheduler $followUps,
+    ) {}
 
     /**
      * @return Email|null l'email envoyé (ou annulé/en échec), null si rien ne pouvait partir
@@ -41,6 +44,9 @@ class EmailSender
 
     private function attempt(): ?Email
     {
+        // M10 : relances arrivées à échéance (J+4, J+12 en jours ouvrés).
+        $this->followUps->enqueueDue();
+
         if (! BusinessCalendar::isSendingTime()) {
             return null;
         }
@@ -73,8 +79,10 @@ class EmailSender
                 return $this->deliver($email);
             }
 
-            // Plus rien en file pour l'étape 1 : la campagne est terminée (relances : M10).
-            $campaign->update(['status' => CampaignStatus::Completed]);
+            // Plus rien en file ni aucune relance à venir : la campagne est terminée.
+            if (! $this->followUps->hasPending($campaign)) {
+                $campaign->update(['status' => CampaignStatus::Completed]);
+            }
         }
 
         return null;
@@ -97,6 +105,12 @@ class EmailSender
             $contact->verification !== ContactVerification::Valid => 'Adresse non vérifiée ou invalide.',
             $contact->needsReview() => 'Adresse personnelle pas encore validée.',
             $email->template === null => 'Template supprimé.',
+            in_array($company->status, [ProspectStatus::Replied, ProspectStatus::QuoteSent, ProspectStatus::Won, ProspectStatus::Lost], true) => 'Prospect au statut « '.$company->status->getLabel().' ».',
+            Email::query()
+                ->where('campaign_id', $email->campaign_id)
+                ->where('company_id', $company->id)
+                ->whereIn('status', FollowUpScheduler::STOPPING_EMAIL_STATUSES)
+                ->exists() => 'Le prospect a répondu ou l’adresse a rebondi.',
             Email::query()
                 ->where('campaign_id', $email->campaign_id)
                 ->where('company_id', $company->id)
@@ -127,7 +141,7 @@ class EmailSender
         Cache::forever(self::NEXT_SEND_KEY, now()->addSeconds(random_int($min * 60, $max * 60)));
 
         try {
-            Mail::to($contact->email)->send(new ProspectMail($rendered, messageId: $messageId));
+            Mail::to($contact->email)->send(new ProspectMail($rendered, messageId: $messageId, references: $this->thread($email)));
         } catch (Throwable $exception) {
             $email->update(['status' => EmailStatus::Failed, 'note' => Str::limit('Échec SMTP : '.$exception->getMessage(), 250)]);
             report($exception);
@@ -145,6 +159,8 @@ class EmailSender
 
         if (in_array($company->status, ProspectStatus::TO_PROCESS, true)) {
             $company->update(['status' => ProspectStatus::Contacted]);
+        } elseif ($company->status === ProspectStatus::Contacted && ($email->sequenceStep?->position ?? 1) > 1) {
+            $company->update(['status' => ProspectStatus::FollowedUp]);
         }
 
         $company->activities()->create([
@@ -154,6 +170,25 @@ class EmailSender
         ]);
 
         return $email;
+    }
+
+    /**
+     * Message-ID des emails déjà envoyés à cette entreprise dans la campagne : une relance reste
+     * dans la même conversation (In-Reply-To / References).
+     *
+     * @return list<string>
+     */
+    private function thread(Email $email): array
+    {
+        return Email::query()
+            ->where('campaign_id', $email->campaign_id)
+            ->where('company_id', $email->company_id)
+            ->whereKeyNot($email->id)
+            ->whereNotNull('message_id')
+            ->orderBy('sent_at')
+            ->pluck('message_id')
+            ->map(fn (string $id) => trim($id, '<>'))
+            ->all();
     }
 
     private function campaignQuotaReached(Campaign $campaign): bool

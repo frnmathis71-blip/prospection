@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Services\Inbox\ImapMailbox;
+use App\Services\Inbox\Mailbox;
 use App\Support\WorkerHeartbeat;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Queue;
@@ -15,7 +17,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Boîte d'envoi lue en IMAP (M10) ; remplacée par une boîte simulée dans les tests.
+        $this->app->bind(Mailbox::class, ImapMailbox::class);
     }
 
     /**

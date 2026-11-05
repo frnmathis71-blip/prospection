@@ -98,6 +98,13 @@ cahier des charges, section « Interdits — à ne jamais faire », et s'appliqu
   plafond global `SENDING_DAILY_CAP` et quotas de la campagne non atteints. `reasonNotToSend()` revérifie juste
   avant l'envoi (liste d'opposition, statut, vérification, revue) : sinon l'email est annulé avec sa raison.
   Tests : heure de Paris simulée (`travelTo`), `Mail::fake()`.
+- Relances et boîte (M10) : `App\Services\FollowUpScheduler` met en file l'étape N+1 le jour ouvré prévu (délai
+  compté depuis l'envoi du J0, `BusinessCalendar::addBusinessDays`), appelé au début de chaque `sendNext()` ; une
+  relance reprend la conversation (References / In-Reply-To). Séquence arrêtée si un email de la campagne est
+  `Replied`/`Bounced`, si le prospect n'est plus « Contacté / Relancé », ou sur opposition. Boîte d'envoi : interface
+  `App\Services\Inbox\Mailbox` (IMAP réel `ImapMailbox`, lecture seule ; simulée dans les tests), job planifié
+  `ReadInbox`, `InboxProcessor` (réponse, absence ignorée, rebond dur → invalide + opposition, rebond temporaire →
+  une nouvelle tentative), chaque message traité une fois (`inbound_messages`). Messages de test : `tests/Fixtures/inbox/*.eml`.
 - Données OpenStreetMap : mentionner « © contributeurs OpenStreetMap » là où elles sont affichées.
 - Données de démo (`DemoSeeder`) : entreprises fictives, adresses en `.example` uniquement (domaine
   réservé, aucun email ne peut y arriver), jamais chargées en production.

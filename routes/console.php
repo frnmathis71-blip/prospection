@@ -6,6 +6,7 @@ use App\Enums\ProspectStatus;
 use App\Jobs\AnalyzeWebsite;
 use App\Jobs\FindContactEmails;
 use App\Jobs\QueueHealthCheck;
+use App\Jobs\ReadInbox;
 use App\Jobs\RecalculateScores;
 use App\Jobs\RunCompanySearch;
 use App\Jobs\SendNextEmail;
@@ -15,6 +16,7 @@ use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Search;
 use App\Services\EmailFinder;
+use App\Services\Inbox\Mailbox;
 use App\Support\BusinessCalendar;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -89,6 +91,20 @@ Artisan::command('app:verify-emails', function () {
 Schedule::job(new SendNextEmail)
     ->everyMinute()
     ->when(fn () => BusinessCalendar::isSendingTime() && Campaign::query()->where('status', CampaignStatus::Active)->exists());
+
+Artisan::command('app:read-inbox', function () {
+    if (! app(Mailbox::class)->isConfigured()) {
+        $this->warn('IMAP non configuré : renseigner IMAP_HOST, IMAP_USERNAME et IMAP_PASSWORD dans le .env.');
+
+        return;
+    }
+
+    $counts = app()->call([new ReadInbox, 'handle']);
+    $this->info($counts === [] ? 'Aucun nouveau message.' : collect($counts)->map(fn ($n, $kind) => "{$kind} : {$n}")->implode(', '));
+})->purpose('Lit la boîte d’envoi : réponses, absences, rebonds (M10)');
+
+// Boîte d'envoi (M10) : réponses, absences et rebonds, toutes les 5 minutes.
+Schedule::job(new ReadInbox)->everyFiveMinutes()->when(fn () => app(Mailbox::class)->isConfigured());
 
 // Recherches récurrentes (mission M4) : « Plombiers 71 — chaque lundi ».
 Schedule::command('app:run-recurring-searches weekly')->weeklyOn(1, '07:00')->timezone('Europe/Paris');
